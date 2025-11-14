@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Dashboard Profesional - TechFix</title>
+	<link rel="stylesheet" th:href="@{/assets/css/profesional.css}">
+</head>
+
+<body>
+	<div class="dashboard-container">
+		<!-- Header -->
+		<header class="dashboard-header">
+			<div class="header-content">
+				<h1>TechFix <span class="professional-badge">Profesional</span></h1>
+				<div class="user-info">
+					<span th:text="${usuario.nombre}">Nombre Usuario</span>
+					<div class="user-actions">
+						<a th:href="@{/usuarios/perfilusuario}" class="btn-profile">Mi Perfil</a>
+						<a th:href="@{/usuarios/logout}" class="btn-logout">Cerrar Sesión</a>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<!-- Main Content -->
+		<main class="dashboard-main">
+			<!-- Welcome Section -->
+			<div class="welcome-section">
+				<h2>Bienvenido, <span th:text="${usuario.nombre}">Profesional</span></h2>
+				<p>Gestiona tus servicios y citas desde tu panel profesional</p>
+			</div>
+
+			<!-- Stats Cards -->
+			<div class="stats-grid">
+				<div class="stat-card">
+					<div class="stat-icon">📅</div>
+					<div class="stat-info">
+						<h3>Citas Hoy</h3>
+						<span class="stat-number" id="citasHoy">0</span>
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-icon">💰</div>
+					<div class="stat-info">
+						<h3>Ingresos Mes</h3>
+						<span class="stat-number" id="ingresosMes">$0</span>
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-icon">⭐</div>
+					<div class="stat-info">
+						<h3>Calificación</h3>
+						<span class="stat-number" id="calificacion">5.0</span>
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-icon">👥</div>
+					<div class="stat-info">
+						<h3>Clientes</h3>
+						<span class="stat-number" id="totalClientes">0</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Professional Info -->
+			<div class="info-section">
+				<div class="info-card">
+					<h3>Mi Información Profesional</h3>
+					<div class="info-content">
+						<div class="info-item">
+							<label>Especialidad:</label>
+							<span th:text="${profesional.especialidad}">Especialidad</span>
+						</div>
+						<div class="info-item">
+							<label>Horario Disponible:</label>
+							<span th:text="${profesional.horarioDisponible}">Horario</span>
+						</div>
+						<div class="info-item">
+							<label>Email:</label>
+							<span th:text="${usuario.email}">email@ejemplo.com</span>
+						</div>
+						<div class="info-item">
+							<label>Teléfono:</label>
+							<span th:text="${usuario.telefono}">+57 300 123 4567</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Quick Actions -->
+				<div class="actions-card">
+					<h3>Acciones Rápidas</h3>
+					<div class="actions-grid">
+						<button class="action-btn" onclick="gestionarCitas()">
+							<span class="action-icon">📅</span>
+							Gestionar Citas
+						</button>
+						<button class="action-btn" onclick="verClientes()">
+							<span class="action-icon">👥</span>
+							Ver Clientes
+						</button>
+						<button class="action-btn" onclick="actualizarHorario()">
+							<span class="action-icon">⏰</span>
+							Actualizar Horario
+						</button>
+						<button class="action-btn" onclick="verCalificaciones()">
+							<span class="action-icon">⭐</span>
+							Ver Calificaciones
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Recent Appointments -->
+			<div class="appointments-section">
+				<div class="section-header">
+					<h3>Próximas Citas</h3>
+					<button class="btn-view-all" onclick="verTodasCitas()">Ver Todas</button>
+				</div>
+				<div class="appointments-list" id="appointmentsList">
+					<!-- Las citas se cargarán con JavaScript -->
+					<div class="empty-state">
+						<p>No tienes citas programadas</p>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<script th:src="@{/assets/js/profesional.js}"></script>
+</body>
+
+</html>

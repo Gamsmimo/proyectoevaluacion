@@ -17,7 +17,10 @@
 				<div class="user-info">
 					<span th:text="${usuario.nombre}">Nombre Usuario</span>
 					<div class="user-actions">
-						<a th:href="@{/usuarios/perfilusuario}" class="btn-profile">Mi Perfil</a>
+						<!-- Botón para abrir modal de eliminar cuenta -->
+						<button type="button" class="btn-delete-account" onclick="abrirModalEliminar()">
+							🗑️ Eliminar Cuenta
+						</button>
 						<a th:href="@{/usuarios/logout}" class="btn-logout">Cerrar Sesión</a>
 					</div>
 				</div>
@@ -32,42 +35,17 @@
 				<p>Gestiona tus servicios y citas desde tu panel profesional</p>
 			</div>
 
-			<!-- Stats Cards -->
-			<div class="stats-grid">
-				<div class="stat-card">
-					<div class="stat-icon">📅</div>
-					<div class="stat-info">
-						<h3>Citas Hoy</h3>
-						<span class="stat-number" id="citasHoy">0</span>
-					</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-icon">💰</div>
-					<div class="stat-info">
-						<h3>Ingresos Mes</h3>
-						<span class="stat-number" id="ingresosMes">$0</span>
-					</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-icon">⭐</div>
-					<div class="stat-info">
-						<h3>Calificación</h3>
-						<span class="stat-number" id="calificacion">5.0</span>
-					</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-icon">👥</div>
-					<div class="stat-info">
-						<h3>Clientes</h3>
-						<span class="stat-number" id="totalClientes">0</span>
-					</div>
-				</div>
-			</div>
-
 			<!-- Professional Info -->
 			<div class="info-section">
+				<!-- Mi Información Profesional -->
 				<div class="info-card">
-					<h3>Mi Información Profesional</h3>
+					<div
+						style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+						<h3>Mi Información Profesional</h3>
+						<a th:href="@{/profesional/editar}" class="btn-profile" style="text-decoration: none;">
+							✏️ Editar Información
+						</a>
+					</div>
 					<div class="info-content">
 						<div class="info-item">
 							<label>Especialidad:</label>
@@ -88,26 +66,47 @@
 					</div>
 				</div>
 
-				<!-- Quick Actions -->
-				<div class="actions-card">
-					<h3>Acciones Rápidas</h3>
-					<div class="actions-grid">
-						<button class="action-btn" onclick="gestionarCitas()">
-							<span class="action-icon">📅</span>
-							Gestionar Citas
+				<!-- Crear Nuevo Servicio -->
+				<div class="info-card">
+					<h3>➕ Crear Nuevo Servicio</h3>
+					<!-- En profesional.html, actualiza el formulario -->
+					<form id="formCrearServicio" class="service-form" onsubmit="crearServicio(event)">
+						<div class="form-group">
+							<label for="nombreServicio">Nombre del Servicio *</label>
+							<input type="text" id="nombreServicio" name="nombreServicio"
+								placeholder="Ej: Reparación de computadora" required>
+						</div>
+
+						<div class="form-group">
+							<label for="descripcionServicio">Descripción *</label>
+							<textarea id="descripcionServicio" name="descripcionServicio" rows="3"
+								placeholder="Describe los detalles del servicio..." required></textarea>
+						</div>
+
+						<div class="form-row">
+							<div class="form-group">
+								<label for="duracionServicio">Duración (minutos) *</label>
+								<input type="number" id="duracionServicio" name="duracionServicio" min="15" step="15"
+									placeholder="60" required>
+							</div>
+
+							<div class="form-group">
+								<label for="precioServicio">Precio (COP) *</label>
+								<input type="number" id="precioServicio" name="precioServicio" min="0" step="1000"
+									placeholder="50000" required>
+							</div>
+						</div>
+
+						<button type="submit" class="btn-submit-service">
+							💾 Guardar Servicio
 						</button>
-						<button class="action-btn" onclick="verClientes()">
-							<span class="action-icon">👥</span>
-							Ver Clientes
-						</button>
-						<button class="action-btn" onclick="actualizarHorario()">
-							<span class="action-icon">⏰</span>
-							Actualizar Horario
-						</button>
-						<button class="action-btn" onclick="verCalificaciones()">
-							<span class="action-icon">⭐</span>
-							Ver Calificaciones
-						</button>
+					</form>
+					<!-- Lista de servicios creados -->
+					<div class="services-list" id="servicesList">
+						<h4 style="margin-top: 2rem; margin-bottom: 1rem; color: #4a5568;">Mis Servicios</h4>
+						<div class="empty-services">
+							<p>No has creado servicios aún</p>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -127,6 +126,32 @@
 			</div>
 		</main>
 	</div>
+
+	<!-- Modal de Confirmación para Eliminar Cuenta -->
+	<div id="modalEliminar" class="modal" style="display: none;">
+		<div class="modal-content">
+			<h3>⚠️ Confirmar Eliminación de Cuenta</h3>
+			<p>¿Estás seguro de que deseas eliminar tu cuenta? Esta acción:</p>
+			<ul>
+				<li>Eliminará permanentemente tu perfil profesional</li>
+				<li>Eliminará tu cuenta de usuario</li>
+				<li>No se puede deshacer</li>
+			</ul>
+			<p>Para confirmar, escribe <strong>ELIMINAR</strong> en el siguiente campo:</p>
+			<input type="text" id="confirmacionTexto" placeholder="Escribe ELIMINAR aquí"
+				style="width: 100%; padding: 0.5rem; margin: 1rem 0; border: 2px solid #e53e3e; border-radius: 4px;">
+			<div class="modal-actions">
+				<button type="button" onclick="cerrarModalEliminar()" class="btn-cancel">Cancelar</button>
+				<button type="button" onclick="confirmarEliminacion()" class="btn-confirm" disabled id="btnConfirmar">
+					Eliminar Cuenta Permanentemente
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Formulario oculto para eliminar cuenta -->
+	<form id="formEliminarCuenta" th:action="@{/profesional/eliminar-cuenta}" method="post" style="display: none;">
+	</form>
 
 	<script th:src="@{/assets/js/profesional.js}"></script>
 </body>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://thymeLeaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
 	<meta charset="UTF-8">
@@ -15,7 +15,7 @@
 				<h1>TechFix</h1>
 			</div>
 			<ul class="nav-links">
-				<li><a th:href="@{/home}" class="nav-button">Inicio</a></li>
+				<li><a th:href="@{/usuarios/home}" class="nav-button">Inicio</a></li>
 				<li><a th:href="@{/usuarios/perfilusuario}" class="nav-button">Perfil</a></li>
 			</ul>
 		</nav>
@@ -27,87 +27,58 @@
 			<p>Selecciona el servicio que necesitas y agenda tu cita</p>
 		</div>
 
-		<form class="reservation-form" th:action="@{/citas/guardar}" method="post">
-			<!-- Información del Cliente -->
-			<section class="form-section">
-				<h2>Información del Cliente</h2>
-				<div class="form-grid">
-					<div class="form-group">
-						<label for="nombre">Nombre Completo *</label>
-						<input type="text" id="nombre" name="nombre" required>
-					</div>
-					<div class="form-group">
-						<label for="telefono">Teléfono *</label>
-						<input type="tel" id="telefono" name="telefono" required>
-					</div>
-					<div class="form-group full-width">
-						<label for="email">Correo Electrónico *</label>
-						<input type="email" id="email" name="email" required>
-					</div>
-				</div>
-			</section>
+		<!-- Mensajes -->
+		<div th:if="${param.success}" class="alert success">
+			<span th:text="${param.success}">¡Cita reservada exitosamente!</span>
+		</div>
 
+		<div th:if="${param.error}" class="alert error">
+			<span th:text="${param.error}">Error al reservar cita</span>
+		</div>
+
+		<form class="reservation-form" th:action="@{/usuarios/reservarcita}" method="post">
 			<!-- Selección de Servicio -->
 			<section class="form-section">
-				<h2>Seleccionar Servicio</h2>
-				<div class="service-selection">
-					<div class="service-option">
-						<input type="radio" id="hardware" name="servicio" value="Reparación de Hardware" required>
-						<label for="hardware" class="service-card">
-							<div class="service-icon">🔧</div>
-							<h3>Reparación de Hardware</h3>
-							<p class="service-duration">⏱️ Duración: 2-4 horas</p>
-							<p class="service-price">💰 Desde: $50.000 COP</p>
-							<ul>
-								<li>Cambio de componentes</li>
-								<li>Reparación de pantallas</li>
-								<li>Actualización de memoria RAM</li>
-								<li>Reemplazo de discos duros</li>
-								<li>Limpieza interna</li>
-								<li>Reparación de fuentes de poder</li>
-							</ul>
-						</label>
-					</div>
+				<h2>Tipo de Servicio *</h2>
+				<div class="form-group full-width">
+					<label for="servicioId">Seleccionar Servicio</label>
+					<select id="servicioId" name="servicioId" required>
+						<option value="">Seleccione un servicio</option>
+						<option th:each="servicio : ${servicios}" th:value="${servicio.id}"
+							th:text="${servicio.nombre} + ' - $' + ${#numbers.formatDecimal(servicio.precio, 0, 'COMMA', 2, 'POINT')}">
+							Servicio - Precio
+						</option>
+					</select>
+				</div>
 
-					<div class="service-option">
-						<input type="radio" id="software" name="servicio" value="Reparación de Software" required>
-						<label for="software" class="service-card">
-							<div class="service-icon">💻</div>
-							<h3>Reparación de Software</h3>
-							<p class="service-duration">⏱️ Duración: 1-3 horas</p>
-							<p class="service-price">💰 Desde: $30.000 COP</p>
-							<ul>
-								<li>Instalación de sistemas operativos</li>
-								<li>Eliminación de virus y malware</li>
-								<li>Optimización del sistema</li>
-								<li>Instalación de drivers</li>
-								<li>Configuración de programas</li>
-								<li>Recuperación de datos</li>
-							</ul>
-						</label>
-					</div>
+				<div th:if="${servicios == null or servicios.empty}" class="no-data-message">
+					<p>No hay servicios disponibles en este momento.</p>
 				</div>
 			</section>
 
-			<!-- Descripción del Problema -->
+			<!-- Selección de Profesional - VERSIÓN CORREGIDA -->
 			<section class="form-section">
-				<h2>Detalles del Servicio</h2>
+				<h2>Seleccionar Profesional *</h2>
 				<div class="form-group full-width">
-					<label for="dispositivo">Tipo de Dispositivo *</label>
-					<select id="dispositivo" name="dispositivo" required>
-						<option value="">Seleccione un dispositivo</option>
-						<option value="PC de Escritorio">PC de Escritorio</option>
-						<option value="Laptop">Laptop</option>
-						<option value="All-in-One">All-in-One</option>
-						<option value="Tablet">Tablet</option>
-						<option value="Otro">Otro</option>
+					<label for="profesionalId">Técnico especialista</label>
+					<select id="profesionalId" name="profesionalId" required>
+						<option value="">Seleccione un profesional</option>
+						<option th:each="profesional : ${profesionales}" th:value="${profesional.id}"
+							th:text="${(profesional.usuario != null ? profesional.usuario.nombre : 'Nombre no disponible')} + ' - ' + ${profesional.especialidad}">
+							Profesional - Especialidad
+						</option>
 					</select>
 				</div>
-				<div class="form-group full-width">
-					<label for="descripcion">Descripción del Problema *</label>
-					<textarea id="descripcion" name="descripcion" rows="5"
-						placeholder="Describe detalladamente el problema que presenta tu dispositivo..."
-						required></textarea>
+
+				<!-- Debug info (quitar en producción) -->
+				<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px;">
+					<strong>Debug Info:</strong>
+					<span
+						th:text="'Profesionales encontrados: ' + ${profesionales != null ? profesionales.size() : 0}"></span>
+				</div>
+
+				<div th:if="${profesionales == null or profesionales.empty}" class="no-data-message">
+					<p>No hay profesionales disponibles en este momento.</p>
 				</div>
 			</section>
 
@@ -116,39 +87,18 @@
 				<h2>Fecha y Hora de la Cita</h2>
 				<div class="form-grid">
 					<div class="form-group">
-						<label for="fecha">Fecha Preferida *</label>
-						<input type="date" id="fecha" name="fecha" required>
+						<label for="fecha">Fecha *</label>
+						<input type="date" id="fecha" name="fecha" required
+							th:attr="min=${#dates.format(#dates.createNow(), 'yyyy-MM-dd')}">
 					</div>
 					<div class="form-group">
-						<label for="hora">Hora Preferida *</label>
-						<select id="hora" name="hora" required>
-							<option value="">Seleccione una hora</option>
-							<option value="08:00">8:00 AM</option>
-							<option value="09:00">9:00 AM</option>
-							<option value="10:00">10:00 AM</option>
-							<option value="11:00">11:00 AM</option>
-							<option value="12:00">12:00 PM</option>
-							<option value="13:00">1:00 PM</option>
-							<option value="14:00">2:00 PM</option>
-							<option value="15:00">3:00 PM</option>
-							<option value="16:00">4:00 PM</option>
-							<option value="17:00">5:00 PM</option>
-						</select>
+						<label for="hora">Hora *</label>
+						<input type="time" id="hora" name="hora" required min="08:00" max="18:00">
 					</div>
-				</div>
-				<div class="info-box">
-					<p><strong>Horario de atención:</strong></p>
-					<p>Lunes a Viernes: 8:00 AM - 6:00 PM</p>
-					<p>Sábados: 9:00 AM - 2:00 PM</p>
 				</div>
 			</section>
 
-			<!-- Campo oculto para duración (se llenará automáticamente según el servicio) -->
-			<input type="hidden" id="duracion" name="duracion" value="">
-			<!-- Campo oculto para precio (se llenará automáticamente según el servicio) -->
-			<input type="hidden" id="precio" name="precio" value="">
-
-			<!-- Botones de Acción -->
+			<!-- Botones -->
 			<div class="form-actions">
 				<button type="button" class="btn-secondary" onclick="window.history.back()">Cancelar</button>
 				<button type="submit" class="btn-primary">Confirmar Reserva</button>
@@ -159,8 +109,28 @@
 	<footer>
 		<p>&copy; 2025 TechFix. Todos los derechos reservados.</p>
 	</footer>
+	<script th:inline="javascript">
+		/*<![CDATA[*/
+		console.log("Profesionales cargados:", /*[[${profesionales}]]*/);
+		console.log("Número de profesionales:", /*[[${profesionales != null ? profesionales.size() : 0}]]*/);
+		console.log("Servicios cargados:", /*[[${servicios}]]*/);
+		console.log("Número de servicios:", /*[[${servicios != null ? servicios.size() : 0}]]*/);
 
-	<script th:src="@{/assets/js/reservar-cita-js.js}"></script>
+		// Debug detallado de profesionales
+		var profesionales = /*[[${profesionales}]]*/[];
+		profesionales.forEach(function (profesional, index) {
+			console.log("Profesional " + index + ":", {
+				id: profesional.id,
+				especialidad: profesional.especialidad,
+				usuario: profesional.usuario ? {
+					id: profesional.usuario.id,
+					nombre: profesional.usuario.nombre,
+					email: profesional.usuario.email
+				} : 'No tiene usuario'
+			});
+		});
+		/*]]>*/
+	</script>
 </body>
 
 </html>

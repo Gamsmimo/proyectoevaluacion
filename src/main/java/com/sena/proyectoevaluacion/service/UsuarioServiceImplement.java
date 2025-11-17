@@ -1,9 +1,13 @@
 package com.sena.proyectoevaluacion.service;
 
+import com.sena.proyectoevaluacion.model.Profesional;
 import com.sena.proyectoevaluacion.model.Usuario;
 import com.sena.proyectoevaluacion.repository.IUsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,6 +16,9 @@ public class UsuarioServiceImplement implements IUsuarioService {
 
 	@Autowired
 	private IUsuarioRepository usuarioRepository;
+
+	@Autowired
+	private IProfesionalService profesionalService;
 
 	@Override
 	public List<Usuario> findAll() {
@@ -24,11 +31,13 @@ public class UsuarioServiceImplement implements IUsuarioService {
 	}
 
 	@Override
+	@Transactional
 	public Usuario save(Usuario usuario) {
 		return usuarioRepository.save(usuario);
 	}
 
 	@Override
+	@Transactional
 	public void deleteById(Integer id) {
 		usuarioRepository.deleteById(id);
 	}
@@ -43,13 +52,7 @@ public class UsuarioServiceImplement implements IUsuarioService {
 		return usuarioRepository.existsByEmail(email);
 	}
 
-	/**
-	 * Método para autenticar usuario por email y contraseña
-	 * 
-	 * @param email    Email del usuario
-	 * @param password Contraseña del usuario
-	 * @return true si las credenciales son correctas, false en caso contrario
-	 */
+	@Override
 	public boolean autenticarUsuario(String email, String password) {
 		try {
 			Optional<Usuario> usuarioOpt = usuarioRepository.findByEmailAndPassword(email, password);
@@ -60,13 +63,8 @@ public class UsuarioServiceImplement implements IUsuarioService {
 		}
 	}
 
-	/**
-	 * Método para registrar un nuevo usuario con validaciones
-	 * 
-	 * @param usuario Objeto Usuario a registrar
-	 * @return Usuario registrado
-	 * @throws RuntimeException si el email ya existe o hay errores de validación
-	 */
+	@Override
+	@Transactional
 	public Usuario registrarUsuario(Usuario usuario) {
 		try {
 			// Validar que el usuario no sea nulo
@@ -94,9 +92,9 @@ public class UsuarioServiceImplement implements IUsuarioService {
 				throw new RuntimeException("El email " + usuario.getEmail() + " ya está registrado");
 			}
 
-			// Asegurar que la fecha de registro se establezca
+			// Asegurar que la fecha de registro se establezca como LocalDateTime
 			if (usuario.getFechaRegistro() == null) {
-				usuario.setFechaRegistro(java.time.LocalDateTime.now());
+				usuario.setFechaRegistro(LocalDateTime.now());
 			}
 
 			System.out.println("Registrando usuario: " + usuario.getEmail());
@@ -117,11 +115,136 @@ public class UsuarioServiceImplement implements IUsuarioService {
 		}
 	}
 
-	/**
-	 * Método alternativo para registro con parámetros individuales
-	 */
+	@Override
+	@Transactional
 	public Usuario registrarUsuario(String nombre, String email, String telefono, String password) {
-		Usuario usuario = new Usuario(nombre, email, telefono, password);
+		// Crear usuario con constructor que acepte estos parámetros
+		Usuario usuario = new Usuario();
+		usuario.setNombre(nombre);
+		usuario.setEmail(email);
+		usuario.setTelefono(telefono);
+		usuario.setPassword(password);
+		usuario.setFechaRegistro(LocalDateTime.now());
+
 		return registrarUsuario(usuario);
+	}
+
+	@Override
+	public Optional<Usuario> findByIdWithProfesional(Integer id) {
+		return usuarioRepository.findByIdWithProfesional(id);
+	}
+
+	@Override
+	public Optional<Usuario> findByIdWithCitas(Integer id) {
+		return usuarioRepository.findByIdWithCitas(id);
+	}
+
+	@Override
+	public Optional<Usuario> findByIdWithAllRelations(Integer id) {
+		try {
+			Optional<Usuario> usuarioOpt = usuarioRepository.findByIdWithAllRelations(id);
+			if (usuarioOpt.isPresent()) {
+				Usuario usuario = usuarioOpt.get();
+				// Forzar la carga de las relaciones si es necesario
+				if (usuario.getProfesional() != null) {
+					System.out.println("DEBUG: Usuario " + usuario.getId() + " es profesional");
+				}
+				return usuarioOpt;
+			}
+			return Optional.empty();
+		} catch (Exception e) {
+			System.err.println("Error al cargar usuario con relaciones: " + e.getMessage());
+			return usuarioRepository.findById(id);
+		}
+	}
+
+	@Override
+	@Transactional
+	public Usuario registrarProfesional(Usuario usuario, String especialidad, String horarioDisponible) {
+		// Primero guardar el usuario si no tiene ID
+		if (usuario.getId() == null) {
+			usuario = save(usuario);
+		}
+
+		// Convertir String a LocalDateTime para horarioDisponible
+		LocalDateTime horario = parseHorarioDisponible(horarioDisponible);
+
+		// Luego crear y guardar el profesional
+		Profesional profesional = new Profesional(especialidad, horario, usuario);
+		profesionalService.save(profesional);
+
+		return usuario;
+	}
+
+	@Override
+	public boolean esProfesional(Integer usuarioId) {
+		return profesionalService.existsByUsuarioId(usuarioId);
+	}
+
+	// Método auxiliar para parsear horario disponible
+	private LocalDateTime parseHorarioDisponible(String horarioStr) {
+		try {
+			// Si el horario viene en formato ISO (desde input datetime-local)
+			if (horarioStr.contains("T")) {
+				return LocalDateTime.parse(horarioStr.replace(" ", "T"));
+			}
+			// Si viene en formato legible, intentar parsear
+			else if (horarioStr.matches(".*\\d{1,2}:\\d{2}.*")) {
+				// Para formatos como "Lunes a Viernes 08:00-18:00"
+				// Usar la fecha actual pero con el horario especificado
+				LocalDateTime now = LocalDateTime.now();
+				// Extraer la primera hora encontrada (hora de inicio)
+				String[] parts = horarioStr.split("\\D+");
+				for (String part : parts) {
+					if (part.length() >= 3) { // Buscar patrones de hora como "800", "0830", etc.
+						String horaStr = part.length() == 3 ? "0" + part.charAt(0) + ":" + part.substring(1)
+								: part.substring(0, 2) + ":" + part.substring(2);
+						return LocalDateTime.of(now.getYear(), now.getMonth(), now.getDayOfMonth(),
+								Integer.parseInt(horaStr.split(":")[0]), Integer.parseInt(horaStr.split(":")[1]));
+					}
+				}
+			}
+			// Si no se puede parsear, usar la fecha y hora actual
+			return LocalDateTime.now();
+		} catch (Exception e) {
+			System.err.println("Error al parsear horario disponible: " + horarioStr + " - " + e.getMessage());
+			return LocalDateTime.now();
+		}
+	}
+
+	// Métodos estadísticos (implementación)
+	@Override
+	public long countUsuariosRegistradosHoy() {
+		try {
+			return usuarioRepository.countUsuariosRegistradosHoy();
+		} catch (Exception e) {
+			// Si falla, intentar con el método nativo
+			try {
+				return usuarioRepository.countUsuariosRegistradosHoyNative();
+			} catch (Exception ex) {
+				System.err.println("Error al contar usuarios registrados hoy: " + ex.getMessage());
+				return 0;
+			}
+		}
+	}
+
+	@Override
+	public long countTotalUsuarios() {
+		try {
+			return usuarioRepository.countTotalUsuarios();
+		} catch (Exception e) {
+			System.err.println("Error al contar total de usuarios: " + e.getMessage());
+			return usuarioRepository.count();
+		}
+	}
+
+	@Override
+	public List<Usuario> findUsuariosProfesionales() {
+		try {
+			return usuarioRepository.findUsuariosProfesionales();
+		} catch (Exception e) {
+			System.err.println("Error al buscar usuarios profesionales: " + e.getMessage());
+			return List.of();
+		}
 	}
 }

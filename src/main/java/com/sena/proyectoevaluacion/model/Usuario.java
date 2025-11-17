@@ -1,12 +1,9 @@
 package com.sena.proyectoevaluacion.model;
 
+import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import java.util.List;
 
 @Entity
 @Table(name = "usuarios")
@@ -14,24 +11,26 @@ public class Usuario {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
+
 	private String nombre;
 	private String email;
-	private String telefono;
-	private LocalDateTime fechaRegistro;
 	private String password;
+	private String telefono;
 
-	public Usuario() {
+	@Column(name = "fecha_registro")
+	private LocalDateTime fechaRegistro; // Cambiar de String a LocalDateTime
 
-	}
+	// Relación: Un usuario puede ser un profesional
+	@OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
+	@JsonIgnore
+	private Profesional profesional;
 
-	public Usuario(String nombre, String email, String telefono, String password) {
-		this.nombre = nombre;
-		this.email = email;
-		this.telefono = telefono;
-		this.password = password;
-		this.fechaRegistro = LocalDateTime.now();
-	}
+	// Relación: Un usuario puede tener múltiples citas
+	@OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+	@JsonIgnore
+	private List<Cita> citas;
 
+	// Getters y Setters
 	public Integer getId() {
 		return id;
 	}
@@ -56,6 +55,14 @@ public class Usuario {
 		this.email = email;
 	}
 
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
 	public String getTelefono() {
 		return telefono;
 	}
@@ -72,20 +79,27 @@ public class Usuario {
 		this.fechaRegistro = fechaRegistro;
 	}
 
-	public String getPassword() {
-		return password;
+	public Profesional getProfesional() {
+		return profesional;
 	}
 
-	public void setPassword(String password) {
-		this.password = password;
+	public void setProfesional(Profesional profesional) {
+		this.profesional = profesional;
+	}
+
+	public List<Cita> getCitas() {
+		return citas;
+	}
+
+	public void setCitas(List<Cita> citas) {
+		this.citas = citas;
 	}
 
 	@Override
 	public String toString() {
-		return "Usuario [id=" + id + ", nombre=" + nombre + ", email=" + email + ", telefono=" + telefono
-				+ ", fechaRegistro=" + fechaRegistro + "]";
+		return "Usuario{" + "id=" + id + ", nombre='" + nombre + '\'' + ", email='" + email + '\'' + ", password='"
+				+ password + '\'' + ", telefono='" + telefono + '\'' + ", fechaRegistro=" + fechaRegistro
+				+ ", profesional=" + (profesional != null ? profesional.getId() : "null") + ", citas="
+				+ (citas != null ? citas.size() : 0) + '}';
 	}
-
-	
-
 }

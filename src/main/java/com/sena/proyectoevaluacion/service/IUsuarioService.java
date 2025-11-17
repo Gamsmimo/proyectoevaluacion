@@ -15,15 +15,34 @@ public interface IUsuarioService {
 
 	void deleteById(Integer id);
 
-	// Métodos esenciales
+	// Métodos específicos
 	Optional<Usuario> findByEmail(String email);
 
 	boolean existsByEmail(String email);
 
-	// Nuevos métodos para autenticación y registro
 	boolean autenticarUsuario(String email, String password);
 
+	// Registro de usuarios
 	Usuario registrarUsuario(Usuario usuario);
 
 	Usuario registrarUsuario(String nombre, String email, String telefono, String password);
+
+	// Métodos con relaciones
+	Optional<Usuario> findByIdWithProfesional(Integer id);
+
+	Optional<Usuario> findByIdWithCitas(Integer id);
+
+	Optional<Usuario> findByIdWithAllRelations(Integer id);
+
+	// Registro de profesional
+	Usuario registrarProfesional(Usuario usuario, String especialidad, String horarioDisponible);
+
+	boolean esProfesional(Integer usuarioId);
+
+	// Métodos estadísticos (agregar estos si no existen)
+	long countUsuariosRegistradosHoy();
+
+	long countTotalUsuarios();
+
+	List<Usuario> findUsuariosProfesionales();
 }

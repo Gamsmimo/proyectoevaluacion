@@ -1,7 +1,9 @@
-// Profesional.java
 package com.sena.proyectoevaluacion.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "profesional")
@@ -13,20 +15,28 @@ public class Profesional {
 	private String especialidad;
 
 	@Column(name = "horario_disponible")
-	private String horarioDisponible;
+	private LocalDateTime horarioDisponible; // Cambiar de String a LocalDateTime
 
-	@Column(name = "usuario_id")
-	private Integer usuarioId;
+	// Relación: Un profesional pertenece a un usuario
+	@OneToOne
+	@JoinColumn(name = "usuario_id")
+	@JsonIgnore
+	private Usuario usuario;
+
+	// Relación: Un profesional puede tener múltiples citas
+	@OneToMany(mappedBy = "profesional", cascade = CascadeType.ALL)
+	@JsonIgnore
+	private List<Cita> citas;
 
 	// Constructor por defecto
 	public Profesional() {
 	}
 
 	// Constructor con parámetros
-	public Profesional(String especialidad, String horarioDisponible, Integer usuarioId) {
+	public Profesional(String especialidad, LocalDateTime horarioDisponible, Usuario usuario) {
 		this.especialidad = especialidad;
 		this.horarioDisponible = horarioDisponible;
-		this.usuarioId = usuarioId;
+		this.usuario = usuario;
 	}
 
 	// Getters y Setters
@@ -46,19 +56,33 @@ public class Profesional {
 		this.especialidad = especialidad;
 	}
 
-	public String getHorarioDisponible() {
+	public LocalDateTime getHorarioDisponible() {
 		return horarioDisponible;
 	}
 
-	public void setHorarioDisponible(String horarioDisponible) {
+	public void setHorarioDisponible(LocalDateTime horarioDisponible) {
 		this.horarioDisponible = horarioDisponible;
 	}
 
-	public Integer getUsuarioId() {
-		return usuarioId;
+	public Usuario getUsuario() {
+		return usuario;
 	}
 
-	public void setUsuarioId(Integer usuarioId) {
-		this.usuarioId = usuarioId;
+	public void setUsuario(Usuario usuario) {
+		this.usuario = usuario;
+	}
+
+	public List<Cita> getCitas() {
+		return citas;
+	}
+
+	public void setCitas(List<Cita> citas) {
+		this.citas = citas;
+	}
+
+	@Override
+	public String toString() {
+		return "Profesional{" + "id=" + id + ", especialidad='" + especialidad + '\'' + ", horarioDisponible="
+				+ horarioDisponible + ", usuario=" + (usuario != null ? usuario.getNombre() : "null") + '}';
 	}
 }

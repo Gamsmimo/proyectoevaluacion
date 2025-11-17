@@ -75,15 +75,8 @@
 		</form>
 
 		<!-- Formulario de Profesional -->
+		<!-- Formulario de Profesional -->
 		<form class="register-form" id="proForm" th:action="@{/usuarios/registro}" method="post" style="display: none;">
-			<div class="form-header">
-				<h3>Registro de Profesional</h3>
-				<p>Completa tus datos personales y profesionales</p>
-			</div>
-
-			<div class="error-message" id="proErrorMessage" th:if="${error}" th:text="${error}"></div>
-			<div class="success-message" id="proSuccessMessage" th:if="${success}" th:text="${success}"></div>
-
 			<input type="hidden" name="tipoRegistro" value="profesional">
 
 			<!-- Datos Personales -->
@@ -124,8 +117,7 @@
 
 				<div class="form-group">
 					<label for="horarioDisponible">Horario Disponible</label>
-					<input type="text" id="horarioDisponible" name="horarioDisponible"
-						placeholder="Ej: Lunes a Viernes 8:00-18:00" required>
+					<input type="datetime-local" id="horarioDisponible" name="horarioDisponible" required>
 				</div>
 			</div>
 

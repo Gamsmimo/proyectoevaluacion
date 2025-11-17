@@ -1,212 +1,151 @@
-// dashboard-profesional.js
-document.addEventListener('DOMContentLoaded', function() {
-    initializeDashboard();
-    loadDashboardData();
-    setupEventListeners();
-});
+// En profesional.js - SOLO las funciones modificadas:
 
-function initializeDashboard() {
-    console.log('Inicializando dashboard profesional...');
-    
-    // Mostrar datos iniciales
-    updateStats();
-    loadAppointments();
+// Función para crear servicio (conexión con backend)
+function crearServicio(event) {
+	event.preventDefault();
+
+	const form = event.target;
+
+	// Validar campos
+	if (!form.nombreServicio.value.trim() || !form.descripcionServicio.value.trim()) {
+		showNotification('❌ Por favor completa todos los campos', 'error');
+		return;
+	}
+
+	const formData = new FormData();
+
+	formData.append('nombreServicio', form.nombreServicio.value);
+	formData.append('descripcionServicio', form.descripcionServicio.value);
+	formData.append('duracionServicio', parseInt(form.duracionServicio.value));
+	formData.append('precioServicio', parseFloat(form.precioServicio.value));
+
+	// Mostrar loading
+	const submitBtn = form.querySelector('.btn-submit-service');
+	const originalText = submitBtn.innerHTML;
+	submitBtn.innerHTML = '⏳ Guardando...';
+	submitBtn.disabled = true;
+
+	fetch('/profesional/crear-servicio', {
+		method: 'POST',
+		body: formData
+	})
+		.then(response => {
+			if (!response.ok) {
+				throw new Error('Error en la respuesta del servidor');
+			}
+			return response.json();
+		})
+		.then(data => {
+			if (data.success) {
+				showNotification('✅ Servicio creado exitosamente', 'success');
+				form.reset();
+				cargarServiciosBackend();
+			} else {
+				showNotification('❌ Error: ' + data.message, 'error');
+			}
+		})
+		.catch(error => {
+			console.error('Error:', error);
+			showNotification('❌ Error de conexión con el servidor', 'error');
+		})
+		.finally(() => {
+			submitBtn.innerHTML = originalText;
+			submitBtn.disabled = false;
+		});
 }
 
-function loadDashboardData() {
-    // Simular carga de datos del dashboard
-    setTimeout(() => {
-        updateStats({
-            citasHoy: 3,
-            ingresosMes: 1250000,
-            calificacion: 4.8,
-            totalClientes: 24
-        });
-        
-        loadSampleAppointments();
-    }, 1000);
+// Función para cargar servicios desde el backend
+function cargarServiciosBackend() {
+	fetch('/profesional/servicios')
+		.then(response => {
+			if (!response.ok) {
+				throw new Error('Error al cargar servicios');
+			}
+			return response.json();
+		})
+		.then(servicios => {
+			mostrarServiciosBackend(servicios);
+		})
+		.catch(error => {
+			console.error('Error al cargar servicios:', error);
+			showNotification('❌ Error al cargar servicios', 'error');
+		});
 }
 
-function updateStats(data = {}) {
-    const stats = {
-        citasHoy: data.citasHoy || 0,
-        ingresosMes: data.ingresosMes || 0,
-        calificacion: data.calificacion || 5.0,
-        totalClientes: data.totalClientes || 0
-    };
+// Función para mostrar servicios desde backend
+function mostrarServiciosBackend(servicios) {
+	const container = document.getElementById('servicesList');
 
-    // Actualizar UI
-    document.getElementById('citasHoy').textContent = stats.citasHoy;
-    document.getElementById('ingresosMes').textContent = formatCurrency(stats.ingresosMes);
-    document.getElementById('calificacion').textContent = stats.calificacion;
-    document.getElementById('totalClientes').textContent = stats.totalClientes;
-}
-
-function loadAppointments() {
-    // En una implementación real, aquí harías una petición al servidor
-    console.log('Cargando citas...');
-}
-
-function loadSampleAppointments() {
-    const appointments = [
-        {
-            id: 1,
-            cliente: 'María González',
-            servicio: 'Reparación de computadora',
-            hora: '10:00 AM',
-            fecha: 'Hoy'
-        },
-        {
-            id: 2,
-            cliente: 'Carlos Rodríguez',
-            servicio: 'Instalación de software',
-            hora: '2:30 PM',
-            fecha: 'Hoy'
-        },
-        {
-            id: 3,
-            cliente: 'Ana Martínez',
-            servicio: 'Mantenimiento preventivo',
-            hora: '4:00 PM',
-            fecha: 'Mañana'
-        }
-    ];
-
-    displayAppointments(appointments);
-}
-
-function displayAppointments(appointments) {
-    const container = document.getElementById('appointmentsList');
-    
-    if (appointments.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>No tienes citas programadas</p>
+	if (!servicios || servicios.length === 0) {
+		container.innerHTML = `
+            <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: #4a5568;">Mis Servicios</h4>
+            <div class="empty-services">
+                <p>No has creado servicios aún</p>
             </div>
         `;
-        return;
-    }
+		return;
+	}
 
-    container.innerHTML = appointments.map(appointment => `
-        <div class="appointment-item" data-id="${appointment.id}">
-            <div class="appointment-info">
-                <h4>${appointment.cliente}</h4>
-                <p>${appointment.servicio}</p>
-                <small>${appointment.fecha}</small>
+	container.innerHTML = `
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: #4a5568;">Mis Servicios (${servicios.length})</h4>
+        ${servicios.map(servicio => `
+            <div class="service-item" data-id="${servicio.id}">
+                <div class="service-header">
+                    <div class="service-title">${servicio.nombre}</div>
+                    <button class="btn-delete-service" onclick="eliminarServicioBackend(${servicio.id})" title="Eliminar servicio">
+                        🗑️ Eliminar
+                    </button>
+                </div>
+                <div class="service-description">${servicio.descripcion}</div>
+                <div class="service-details">
+                    <div class="service-detail">
+                        <span>⏱️ Duración:</span>
+                        <span>${servicio.duracion}</span>
+                    </div>
+                    <div class="service-detail">
+                        <span>💰 Precio:</span>
+                        <span>${formatCurrency(servicio.precio)}</span>
+                    </div>
+                </div>
             </div>
-            <div class="appointment-time">
-                ${appointment.hora}
-            </div>
-        </div>
-    `).join('');
-}
-
-function setupEventListeners() {
-    // Agregar event listeners para las acciones
-    console.log('Configurando event listeners...');
-}
-
-// Funciones de acciones
-function gestionarCitas() {
-    showNotification('Redirigiendo a gestión de citas...');
-    // window.location.href = '/profesional/citas';
-}
-
-function verClientes() {
-    showNotification('Cargando lista de clientes...');
-    // window.location.href = '/profesional/clientes';
-}
-
-function actualizarHorario() {
-    showNotification('Abriendo editor de horario...');
-    // window.location.href = '/profesional/horario';
-}
-
-function verCalificaciones() {
-    showNotification('Mostrando calificaciones...');
-    // window.location.href = '/profesional/calificaciones';
-}
-
-function verTodasCitas() {
-    showNotification('Cargando todas las citas...');
-    // window.location.href = '/profesional/citas';
-}
-
-// Utilidades
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0
-    }).format(amount);
-}
-
-function showNotification(message, type = 'info') {
-    // Crear notificación temporal
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'error' ? '#e53e3e' : '#38a169'};
-        color: white;
-        padding: 12px 20px;
-        border-radius: 6px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        z-index: 1000;
-        animation: slideInRight 0.3s ease;
+        `).join('')}
     `;
-
-    document.body.appendChild(notification);
-
-    // Remover después de 3 segundos
-    setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => {
-            document.body.removeChild(notification);
-        }, 300);
-    }, 3000);
 }
 
-// CSS para animaciones de notificación
-const notificationStyles = `
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+// Función para eliminar servicio en el backend
+function eliminarServicioBackend(id) {
+	if (confirm('¿Estás seguro de que deseas eliminar este servicio?')) {
+		fetch(`/profesional/eliminar-servicio/${id}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			}
+		})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Error en la respuesta del servidor');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if (data.success) {
+					showNotification('✅ Servicio eliminado correctamente', 'info');
+					cargarServiciosBackend();
+				} else {
+					showNotification('❌ Error: ' + data.message, 'error');
+				}
+			})
+			.catch(error => {
+				console.error('Error:', error);
+				showNotification('❌ Error al eliminar servicio', 'error');
+			});
+	}
 }
 
-@keyframes slideOutRight {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-`;
-
-// Inyectar estilos de notificación
-const styleSheet = document.createElement('style');
-styleSheet.textContent = notificationStyles;
-document.head.appendChild(styleSheet);
-
-// Simular datos en tiempo real (para demo)
-setInterval(() => {
-    const randomChange = Math.random() > 0.5 ? 1 : -1;
-    const citasElement = document.getElementById('citasHoy');
-    let citas = parseInt(citasElement.textContent) || 0;
-    
-    if (citas + randomChange >= 0) {
-        citasElement.textContent = citas + randomChange;
-    }
-}, 10000);
+// En DOMContentLoaded, cambiar a:
+document.addEventListener('DOMContentLoaded', function() {
+	initializeDashboard();
+	loadDashboardData();
+	setupEventListeners();
+	cargarServiciosBackend(); // Cambiado para cargar desde backend
+});

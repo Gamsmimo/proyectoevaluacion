@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Editar Información - TechFix</title>
+	<link rel="stylesheet" th:href="@{/assets/css/profesional.css}">
+	<style>
+		.form-container {
+			max-width: 600px;
+			margin: 2rem auto;
+			background: white;
+			padding: 2rem;
+			border-radius: 12px;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		}
+
+		.form-group {
+			margin-bottom: 1.5rem;
+		}
+
+		.form-group label {
+			display: block;
+			margin-bottom: 0.5rem;
+			font-weight: 600;
+			color: #2d3748;
+		}
+
+		.form-control {
+			width: 100%;
+			padding: 0.75rem;
+			border: 2px solid #e2e8f0;
+			border-radius: 6px;
+			font-size: 1rem;
+			transition: border-color 0.3s ease;
+		}
+
+		.form-control:focus {
+			outline: none;
+			border-color: #667eea;
+		}
+
+		.btn-group {
+			display: flex;
+			gap: 1rem;
+			justify-content: flex-end;
+			margin-top: 2rem;
+		}
+
+		.btn-primary {
+			background: #667eea;
+			color: white;
+			border: none;
+			padding: 0.75rem 2rem;
+			border-radius: 6px;
+			cursor: pointer;
+			font-weight: 600;
+			transition: all 0.3s ease;
+		}
+
+		.btn-primary:hover {
+			background: #5a6fd8;
+			transform: translateY(-2px);
+		}
+
+		.btn-secondary {
+			background: #a0aec0;
+			color: white;
+			border: none;
+			padding: 0.75rem 2rem;
+			border-radius: 6px;
+			cursor: pointer;
+			font-weight: 600;
+			text-decoration: none;
+			transition: all 0.3s ease;
+			display: inline-block;
+		}
+
+		.btn-secondary:hover {
+			background: #718096;
+			transform: translateY(-2px);
+		}
+
+		.alert {
+			padding: 1rem;
+			border-radius: 6px;
+			margin-bottom: 1rem;
+		}
+
+		.alert-success {
+			background: #c6f6d5;
+			color: #22543d;
+			border: 1px solid #9ae6b4;
+		}
+
+		.alert-error {
+			background: #fed7d7;
+			color: #742a2a;
+			border: 1px solid #feb2b2;
+		}
+
+		.small-text {
+			color: #718096;
+			font-size: 0.875rem;
+			margin-top: 0.5rem;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="dashboard-container">
+		<!-- Header -->
+		<header class="dashboard-header">
+			<div class="header-content">
+				<h1>TechFix <span class="professional-badge">Profesional</span></h1>
+				<div class="user-info">
+					<span th:text="${usuario.nombre}">Nombre Usuario</span>
+					<div class="user-actions">
+						<a th:href="@{/profesional/dashboard}" class="btn-secondary">Volver al Dashboard</a>
+						<a th:href="@{/usuarios/logout}" class="btn-logout">Cerrar Sesión</a>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<!-- Main Content -->
+		<main class="dashboard-main">
+			<div class="welcome-section">
+				<h2>Editar Información Profesional</h2>
+				<p>Actualiza tu información de contacto y horario disponible</p>
+			</div>
+
+			<!-- Mensajes de alerta -->
+			<div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+			<div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+			<div class="form-container">
+				<form th:action="@{/profesional/actualizar}" method="post">
+					<!-- CSRF Token -->
+					<input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+
+					<!-- Información del Usuario -->
+					<div class="form-group">
+						<label for="email">Email:</label>
+						<input type="email" id="email" name="email" class="form-control" th:value="${usuario.email}"
+							required>
+					</div>
+
+					<div class="form-group">
+						<label for="telefono">Teléfono:</label>
+						<input type="tel" id="telefono" name="telefono" class="form-control"
+							th:value="${usuario.telefono}" required>
+					</div>
+
+					<!-- Información del Profesional -->
+					<div class="form-group">
+						<label for="especialidad">Especialidad:</label>
+						<input type="text" id="especialidad" name="especialidad" class="form-control"
+							th:value="${profesional.especialidad}" required>
+						<div class="small-text">
+							Tu área de especialización (ej: Reparación de computadoras, Soporte técnico, etc.)
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label for="horarioDisponible">Horario Disponible:</label>
+						<input type="text" id="horarioDisponible" name="horarioDisponible" class="form-control"
+							th:value="${profesional.horarioDisponible}"
+							placeholder="Ej: Lunes a Viernes 8:00 AM - 6:00 PM" required>
+						<div class="small-text">
+							Describe tu horario de atención disponible (ej: Lunes a Viernes 8:00-18:00)
+						</div>
+					</div>
+
+					<div class="btn-group">
+						<a th:href="@{/profesional/dashboard}" class="btn-secondary">Cancelar</a>
+						<button type="submit" class="btn-primary">Actualizar Información</button>
+					</div>
+				</form>
+			</div>
+		</main>
+	</div>
+</body>
+
+</html>

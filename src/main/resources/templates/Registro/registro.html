@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>TechFix - Registro</title>
+	<link rel="stylesheet" th:href="@{/assets/css/registro-css.css}">
+	<link rel="stylesheet" th:href="@{/assets/css/profesional-registro.css}">
+</head>
+
+<body>
+	<div class="register-container">
+		<div class="register-header">
+			<h1>TechFix</h1>
+			<p>Selecciona tu tipo de cuenta</p>
+		</div>
+
+		<div class="account-type-selector">
+			<div class="account-option" id="userOption">
+				<div class="option-icon">👤</div>
+				<h3>Usuario</h3>
+				<p>Busca servicios técnicos y agenda citas</p>
+				<button class="option-btn" onclick="showUserForm()">Registrarse como Usuario</button>
+			</div>
+
+			<div class="account-option" id="proOption">
+				<div class="option-icon">🔧</div>
+				<h3>Profesional</h3>
+				<p>Ofrece servicios técnicos y gestiona citas</p>
+				<button class="option-btn" onclick="showProForm()">Registrarse como Profesional</button>
+			</div>
+		</div>
+
+		<!-- Formulario de Usuario -->
+		<form class="register-form" id="userForm" th:action="@{/usuarios/registro}" method="post"
+			style="display: none;">
+			<div class="form-header">
+				<h3>Registro de Usuario</h3>
+				<p>Completa tus datos personales</p>
+			</div>
+
+			<div class="error-message" id="errorMessage" th:if="${error}" th:text="${error}"></div>
+			<div class="success-message" id="successMessage" th:if="${success}" th:text="${success}"></div>
+
+			<input type="hidden" name="tipoRegistro" value="usuario">
+
+			<div class="form-group">
+				<label for="nombre">Nombre Completo</label>
+				<input type="text" id="nombre" name="nombre" placeholder="Juan Pérez" required>
+			</div>
+
+			<div class="form-group">
+				<label for="email">Correo Electrónico</label>
+				<input type="email" id="email" name="email" placeholder="tu@email.com" required>
+			</div>
+
+			<div class="form-group">
+				<label for="telefono">Teléfono</label>
+				<input type="tel" id="telefono" name="telefono" placeholder="+57 300 123 4567" required>
+			</div>
+
+			<div class="form-group">
+				<label for="password">Contraseña</label>
+				<input type="password" id="password" name="password" placeholder="••••••••" required minlength="6">
+			</div>
+
+			<div class="form-group">
+				<label for="confirmPassword">Confirmar Contraseña</label>
+				<input type="password" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required>
+			</div>
+
+			<button type="submit" class="register-button">Registrarse como Usuario</button>
+			<button type="button" class="back-button" onclick="showTypeSelector()">← Volver</button>
+		</form>
+
+		<!-- Formulario de Profesional -->
+		<!-- Formulario de Profesional -->
+		<form class="register-form" id="proForm" th:action="@{/usuarios/registro}" method="post" style="display: none;">
+			<input type="hidden" name="tipoRegistro" value="profesional">
+
+			<!-- Datos Personales -->
+			<div class="form-section">
+				<h4>Datos Personales</h4>
+				<div class="form-group">
+					<label for="proNombre">Nombre Completo</label>
+					<input type="text" id="proNombre" name="nombre" placeholder="Juan Pérez" required>
+				</div>
+
+				<div class="form-group">
+					<label for="proEmail">Correo Electrónico</label>
+					<input type="email" id="proEmail" name="email" placeholder="tu@email.com" required>
+				</div>
+
+				<div class="form-group">
+					<label for="proTelefono">Teléfono</label>
+					<input type="tel" id="proTelefono" name="telefono" placeholder="+57 300 123 4567" required>
+				</div>
+			</div>
+
+			<!-- Datos Profesionales -->
+			<div class="form-section">
+				<h4>Datos Profesionales</h4>
+				<div class="form-group">
+					<label for="especialidad">Especialidad</label>
+					<select id="especialidad" name="especialidad" required>
+						<option value="">Selecciona tu especialidad</option>
+						<option value="Electricista">Electricista</option>
+						<option value="Plomero">Plomero</option>
+						<option value="Técnico en Computadoras">Técnico en Computadoras</option>
+						<option value="Reparación de Celulares">Reparación de Celulares</option>
+						<option value="Mecánico">Mecánico</option>
+						<option value="Cerrajero">Cerrajero</option>
+						<option value="Otro">Otro</option>
+					</select>
+				</div>
+
+				<div class="form-group">
+					<label for="horarioDisponible">Horario Disponible</label>
+					<input type="datetime-local" id="horarioDisponible" name="horarioDisponible" required>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label for="proPassword">Contraseña</label>
+				<input type="password" id="proPassword" name="password" placeholder="••••••••" required minlength="6">
+			</div>
+
+			<div class="form-group">
+				<label for="proConfirmPassword">Confirmar Contraseña</label>
+				<input type="password" id="proConfirmPassword" name="confirmPassword" placeholder="••••••••" required>
+			</div>
+
+			<button type="submit" class="register-button pro-btn">Registrarse como Profesional</button>
+			<button type="button" class="back-button" onclick="showTypeSelector()">← Volver</button>
+		</form>
+
+		<div class="login-link">
+			¿Ya tienes una cuenta? <a th:href="@{/usuarios/login}">Inicia sesión aquí</a>
+		</div>
+
+		<div class="back-home">
+			<a th:href="@{/usuarios/index}">← Volver al inicio</a>
+		</div>
+	</div>
+
+	<script th:src="@{/assets/js/profesional-registro.js}"></script>
+</body>
+
+</html>

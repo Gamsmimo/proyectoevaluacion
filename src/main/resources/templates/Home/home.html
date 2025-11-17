@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://thymeLeaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>TechFix - Taller de Reparación</title>
+	<link rel="stylesheet" th:href="@{/assets/css/style.css}">
+</head>
+
+<body>
+	<header>
+		<nav>
+			<div class="logo">
+				<h1>TechFix</h1>
+			</div>
+			<ul class="nav-links">
+				<li><a th:href="@{/usuarios/reservarcita}" class="login-button">Reservar Cita</a></li>
+				<li><a th:href="@{/usuarios/citas_usuario}" class="login-button">Mis Citas</a></li>
+				<li><a th:href="@{/usuarios/perfilusuario}" class="login-button">Perfil</a></li>
+			</ul>
+		</nav>
+	</header>
+
+	<section id="inicio" class="hero">
+		<div class="hero-content">
+			<h2>Reparación de Hardware y Software</h2>
+			<p>Soluciones profesionales para todos tus dispositivos</p>
+		</div>
+	</section>
+
+	<section id="servicios" class="services">
+		<h2>Nuestros Servicios</h2>
+		<div class="service-cards">
+			<div class="card">
+				<div class="icon">💻</div>
+				<h3>Reparación de Computadoras</h3>
+				<p>Diagnóstico y reparación de PC y laptops</p>
+			</div>
+			<div class="card">
+				<div class="icon">🔧</div>
+				<h3>Mantenimiento de Hardware</h3>
+				<p>Limpieza, actualizaciones y cambio de componentes</p>
+			</div>
+			<div class="card">
+				<div class="icon">⚙️</div>
+				<h3>Instalación de Software</h3>
+				<p>Sistemas operativos, drivers y programas</p>
+			</div>
+			<div class="card">
+				<div class="icon">🛡️</div>
+				<h3>Eliminación de Virus</h3>
+				<p>Limpieza completa y protección antivirus</p>
+			</div>
+		</div>
+	</section>
+
+	<section id="contacto" class="contact">
+		<h2>Contáctanos</h2>
+		<div class="contact-info">
+			<div class="info-item">
+				<span class="icon">📞</span>
+				<p>+57 300 123 4567</p>
+			</div>
+			<div class="info-item">
+				<span class="icon">📧</span>
+				<p>contacto@techfix.com</p>
+			</div>
+			<div class="info-item">
+				<span class="icon">📍</span>
+				<p>Duitama, Boyacá, Colombia</p>
+			</div>
+		</div>
+		<div class="hours">
+			<h3>Horario de Atención</h3>
+			<p>Lunes a Viernes: 8:00 AM - 6:00 PM</p>
+			<p>Sábados: 9:00 AM - 2:00 PM</p>
+		</div>
+	</section>
+
+	<footer>
+		<p>&copy; 2025 TechFix. Todos los derechos reservados.</p>
+	</footer>
+
+	<script th:src="@{/assets/js/script.js}"></script>
+</body>
+
+</html>

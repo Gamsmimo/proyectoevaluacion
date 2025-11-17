@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Mis Citas</title>
+	<link rel="stylesheet" th:href="@{/assets/css/citas_usuario_css.css}">
+</head>
+
+<body>
+	<div class="container">
+		<div class="header-card">
+			<div class="header-content">
+				<svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+					<line x1="8" y1="21" x2="16" y2="21"></line>
+					<line x1="12" y1="17" x2="12" y2="21"></line>
+				</svg>
+				<div>
+					<h1>Mis Citas</h1>
+					<p>Gestiona tus servicios programados</p>
+				</div>
+			</div>
+		</div>
+		<!-- Estado vacío -->
+		<div th:if="${citas == null or citas.empty}" class="empty-state">
+			<svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<path
+					d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+				</path>
+			</svg>
+			<h2>No tienes citas programadas</h2>
+			<p>Tus servicios de reparación aparecerán aquí cuando los reserves</p>
+		</div>
+
+		<!-- Lista de citas - VERSIÓN SIMPLIFICADA PARA PRUEBA -->
+		<div th:if="${citas != null and not citas.empty}" class="appointments-list">
+			<div th:each="cita : ${citas}" class="appointment-card">
+				<div class="appointment-content">
+					<div class="appointment-header">
+						<div class="service-title-wrapper">
+							<div class="service-title-row">
+								<svg class="service-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+									stroke-width="2">
+									<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+									<polyline points="14,2 14,8 20,8"></polyline>
+								</svg>
+								<h3 class="service-title" th:text="${cita.servicio.nombre}">Servicio</h3>
+							</div>
+						</div>
+						<span class="status-badge" th:text="${cita.estado}">Estado</span>
+					</div>
+
+					<div class="service-details">
+						<p><strong>Descripción:</strong> <span th:text="${cita.servicio.descripcion}">Descripción</span>
+						</p>
+						<p><strong>Duración:</strong> <span th:text="${cita.servicio.duracion}">Duración</span></p>
+						<p><strong>Precio:</strong> $<span
+								th:text="${#numbers.formatDecimal(cita.servicio.precio, 0, 'COMMA', 0, 'POINT')}">Precio</span>
+						</p>
+						<p><strong>Profesional:</strong> <span th:text="${cita.profesional.nombre}">Profesional</span>
+						</p>
+						<p><strong>Fecha:</strong> <span
+								th:text="${#temporals.format(cita.fechaHora, 'dd/MM/yyyy HH:mm')}">Fecha</span></p>
+					</div>
+
+					<button th:if="${cita.estado == 'Pendiente' or cita.estado == 'activo'}" class="cancel-button"
+						th:onclick="'cancelarCita(' + ${cita.id} + ')'">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<line x1="18" y1="6" x2="6" y2="18"></line>
+							<line x1="6" y1="6" x2="18" y2="18"></line>
+						</svg>
+						Cancelar Cita
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script th:src="@{/assets/js/citas_usuario_js.js}"></script>
+</body>
+
+</html>

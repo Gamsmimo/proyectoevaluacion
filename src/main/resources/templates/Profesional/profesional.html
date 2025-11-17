@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Dashboard Profesional - TechFix</title>
+	<link rel="stylesheet" th:href="@{/assets/css/profesional.css}">
+</head>
+
+<body>
+	<div class="dashboard-container">
+		<!-- Header -->
+		<header class="dashboard-header">
+			<div class="header-content">
+				<h1>TechFix <span class="professional-badge">Profesional</span></h1>
+				<div class="user-info">
+					<span th:text="${usuario.nombre}">Nombre Usuario</span>
+					<div class="user-actions">
+						<!-- Botón para abrir modal de eliminar cuenta -->
+						<button type="button" class="btn-delete-account" onclick="abrirModalEliminar()">
+							🗑️ Eliminar Cuenta
+						</button>
+						<a th:href="@{/usuarios/logout}" class="btn-logout">Cerrar Sesión</a>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<!-- Main Content -->
+		<main class="dashboard-main">
+			<!-- Welcome Section -->
+			<div class="welcome-section">
+				<h2>Bienvenido, <span th:text="${usuario.nombre}">Profesional</span></h2>
+				<p>Gestiona tus servicios y citas desde tu panel profesional</p>
+			</div>
+
+			<!-- Professional Info -->
+			<div class="info-section">
+				<!-- Mi Información Profesional -->
+				<div class="info-card">
+					<div
+						style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+						<h3>Mi Información Profesional</h3>
+						<a th:href="@{/profesional/editar}" class="btn-profile" style="text-decoration: none;">
+							✏️ Editar Información
+						</a>
+					</div>
+					<div class="info-content">
+						<div class="info-item">
+							<label>Especialidad:</label>
+							<span th:text="${profesional.especialidad}">Especialidad</span>
+						</div>
+						<div class="info-item">
+							<label>Horario Disponible:</label>
+							<span th:text="${profesional.horarioDisponible}">Horario</span>
+						</div>
+						<div class="info-item">
+							<label>Email:</label>
+							<span th:text="${usuario.email}">email@ejemplo.com</span>
+						</div>
+						<div class="info-item">
+							<label>Teléfono:</label>
+							<span th:text="${usuario.telefono}">+57 300 123 4567</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Crear Nuevo Servicio -->
+				<div class="info-card">
+					<h3>➕ Crear Nuevo Servicio</h3>
+					<!-- ✅ FORMULARIO ACTUALIZADO CON CSRF -->
+					<form id="formCrearServicio" class="service-form" onsubmit="crearServicio(event)">
+						<!-- ✅ CSRF TOKEN -->
+						<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+						<div class="form-group">
+							<label for="nombreServicio">Nombre del Servicio *</label>
+							<input type="text" id="nombreServicio" name="nombreServicio"
+								placeholder="Ej: Reparación de computadora" required>
+						</div>
+
+						<div class="form-group">
+							<label for="descripcionServicio">Descripción *</label>
+							<textarea id="descripcionServicio" name="descripcionServicio" rows="3"
+								placeholder="Describe los detalles del servicio..." required></textarea>
+						</div>
+
+						<div class="form-row">
+							<div class="form-group">
+								<label for="duracionServicio">Duración (minutos) *</label>
+								<input type="number" id="duracionServicio" name="duracionServicio" min="15" step="15"
+									placeholder="60" required>
+							</div>
+
+							<div class="form-group">
+								<label for="precioServicio">Precio (COP) *</label>
+								<input type="number" id="precioServicio" name="precioServicio" min="0" step="1000"
+									placeholder="50000" required>
+							</div>
+						</div>
+
+						<button type="submit" class="btn-submit-service">
+							💾 Guardar Servicio
+						</button>
+					</form>
+					<!-- Lista de servicios creados -->
+					<div class="services-list" id="servicesList">
+						<h4 style="margin-top: 2rem; margin-bottom: 1rem; color: #4a5568;">Mis Servicios</h4>
+						<div class="empty-services">
+							<p>No has creado servicios aún</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Citas Pendientes de Aprobación -->
+			<div class="appointments-section">
+				<div class="section-header">
+					<h3>📋 Citas Pendientes de Aprobación</h3>
+					<span class="badge-count" th:text="${citasPendientes != null ? citasPendientes.size() : 0}">0</span>
+				</div>
+				<div class="appointments-list">
+					<div th:if="${citasPendientes == null || citasPendientes.empty}" class="empty-state">
+						<p>No tienes citas pendientes de aprobación</p>
+					</div>
+					<div th:each="cita : ${citasPendientes}" class="appointment-item pending">
+						<div class="appointment-info">
+							<h4 th:text="${cita.servicio != null ? cita.servicio.nombre : 'Servicio no disponible'}">
+								Servicio</h4>
+							<p><strong>Cliente:</strong> <span
+									th:text="${cita.usuario != null ? cita.usuario.nombre : 'Cliente no disponible'}">Nombre
+									Cliente</span></p>
+							<p><strong>Fecha:</strong> <span
+									th:text="${#temporals.format(cita.fechaHora, 'dd/MM/yyyy HH:mm')}">Fecha</span></p>
+							<p><strong>Estado:</strong> <span class="status-pending"
+									th:text="${cita.estado}">PENDIENTE</span></p>
+							<p th:if="${cita.usuario != null && cita.usuario.telefono != null}">
+								<strong>Teléfono:</strong> <span th:text="${cita.usuario.telefono}">Teléfono</span>
+							</p>
+						</div>
+						<div class="appointment-actions">
+							<button class="btn-accept" th:onclick="'aceptarCita(' + ${cita.id} + ')'">
+								✅ Aceptar
+							</button>
+							<button class="btn-reject" th:onclick="'rechazarCita(' + ${cita.id} + ')'">
+								❌ Rechazar
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Citas Aceptadas -->
+			<div class="appointments-section">
+				<div class="section-header">
+					<h3>✅ Citas Aceptadas</h3>
+					<span class="badge-count" th:text="${citasAceptadas != null ? citasAceptadas.size() : 0}">0</span>
+				</div>
+				<div class="appointments-list">
+					<div th:if="${citasAceptadas == null || citasAceptadas.empty}" class="empty-state">
+						<p>No tienes citas aceptadas</p>
+					</div>
+					<div th:each="cita : ${citasAceptadas}" class="appointment-item accepted">
+						<div class="appointment-info">
+							<h4 th:text="${cita.servicio != null ? cita.servicio.nombre : 'Servicio no disponible'}">
+								Servicio</h4>
+							<p><strong>Cliente:</strong> <span
+									th:text="${cita.usuario != null ? cita.usuario.nombre : 'Cliente no disponible'}">Nombre
+									Cliente</span></p>
+							<p><strong>Fecha:</strong> <span
+									th:text="${#temporals.format(cita.fechaHora, 'dd/MM/yyyy HH:mm')}">Fecha</span></p>
+							<p th:if="${cita.usuario != null && cita.usuario.telefono != null}">
+								<strong>Teléfono:</strong> <span th:text="${cita.usuario.telefono}">Teléfono</span>
+							</p>
+							<p th:if="${cita.usuario != null && cita.usuario.email != null}">
+								<strong>Email:</strong> <span th:text="${cita.usuario.email}">Email</span>
+							</p>
+						</div>
+						<div class="appointment-actions">
+							<button class="btn-complete" th:onclick="'completarCita(' + ${cita.id} + ')'">
+								🎉 Completada
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Citas Completadas -->
+			<div class="appointments-section">
+				<div class="section-header">
+					<h3>📊 Citas Completadas</h3>
+					<span class="badge-count"
+						th:text="${citasCompletadas != null ? citasCompletadas.size() : 0}">0</span>
+				</div>
+				<div class="appointments-list">
+					<div th:if="${citasCompletadas == null || citasCompletadas.empty}" class="empty-state">
+						<p>No tienes citas completadas</p>
+					</div>
+					<div th:each="cita : ${citasCompletadas}" class="appointment-item completed">
+						<div class="appointment-info">
+							<h4 th:text="${cita.servicio != null ? cita.servicio.nombre : 'Servicio no disponible'}">
+								Servicio</h4>
+							<p><strong>Cliente:</strong> <span
+									th:text="${cita.usuario != null ? cita.usuario.nombre : 'Cliente no disponible'}">Nombre
+									Cliente</span></p>
+							<p><strong>Fecha:</strong> <span
+									th:text="${#temporals.format(cita.fechaHora, 'dd/MM/yyyy HH:mm')}">Fecha</span></p>
+							<p><strong>Estado:</strong> <span class="status-completed"
+									th:text="${cita.estado}">COMPLETADA</span></p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Citas Rechazadas -->
+			<div class="appointments-section">
+				<div class="section-header">
+					<h3>❌ Citas Rechazadas</h3>
+					<span class="badge-count" th:text="${citasRechazadas != null ? citasRechazadas.size() : 0}">0</span>
+				</div>
+				<div class="appointments-list">
+					<div th:if="${citasRechazadas == null || citasRechazadas.empty}" class="empty-state">
+						<p>No tienes citas rechazadas</p>
+					</div>
+					<div th:each="cita : ${citasRechazadas}" class="appointment-item rejected">
+						<div class="appointment-info">
+							<h4 th:text="${cita.servicio != null ? cita.servicio.nombre : 'Servicio no disponible'}">
+								Servicio</h4>
+							<p><strong>Cliente:</strong> <span
+									th:text="${cita.usuario != null ? cita.usuario.nombre : 'Cliente no disponible'}">Nombre
+									Cliente</span></p>
+							<p><strong>Fecha:</strong> <span
+									th:text="${#temporals.format(cita.fechaHora, 'dd/MM/yyyy HH:mm')}">Fecha</span></p>
+							<p><strong>Estado:</strong> <span class="status-rejected"
+									th:text="${cita.estado}">RECHAZADA</span></p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<!-- Modal de Confirmación para Eliminar Cuenta -->
+	<div id="modalEliminar" class="modal" style="display: none;">
+		<div class="modal-content">
+			<h3>⚠️ Confirmar Eliminación de Cuenta</h3>
+			<p>¿Estás seguro de que deseas eliminar tu cuenta? Esta acción:</p>
+			<ul>
+				<li>Eliminará permanentemente tu perfil profesional</li>
+				<li>Eliminará tu cuenta de usuario</li>
+				<li>Cancelará todas tus citas pendientes</li>
+				<li>No se puede deshacer</li>
+			</ul>
+			<p>Para confirmar, escribe <strong>ELIMINAR</strong> en el siguiente campo:</p>
+			<input type="text" id="confirmacionTexto" placeholder="Escribe ELIMINAR aquí"
+				style="width: 100%; padding: 0.75rem; margin: 1rem 0; border: 2px solid #e53e3e; border-radius: 6px; font-size: 1rem;"
+				oninput="verificarConfirmacion()">
+			<div class="modal-actions">
+				<button type="button" onclick="cerrarModalEliminar()" class="btn-cancel">Cancelar</button>
+				<button type="button" onclick="confirmarEliminacion()" class="btn-confirm" disabled id="btnConfirmar">
+					Eliminar Cuenta Permanentemente
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal de Editar Servicio -->
+	<div id="modalEditarServicio" class="modal-editar-servicio" style="display: none;">
+		<div class="modal-editar-content">
+			<h3>✏️ Editar Servicio</h3>
+			<!-- ✅ FORMULARIO ACTUALIZADO CON CSRF -->
+			<form id="formEditarServicio" class="service-form" onsubmit="guardarServicioEditado(event)">
+				<!-- ✅ CSRF TOKEN -->
+				<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+				<input type="hidden" id="editServicioId" name="editServicioId">
+
+				<div class="modal-form-group">
+					<label for="editNombreServicio">Nombre del Servicio *</label>
+					<input type="text" id="editNombreServicio" name="editNombreServicio"
+						placeholder="Ej: Reparación de computadora" required>
+				</div>
+
+				<div class="modal-form-group">
+					<label for="editDescripcionServicio">Descripción *</label>
+					<textarea id="editDescripcionServicio" name="editDescripcionServicio" rows="3"
+						placeholder="Describe los detalles del servicio..." required></textarea>
+				</div>
+
+				<div class="modal-form-row">
+					<div class="modal-form-group">
+						<label for="editDuracionServicio">Duración (minutos) *</label>
+						<input type="number" id="editDuracionServicio" name="editDuracionServicio" min="15" step="15"
+							placeholder="60" required>
+					</div>
+
+					<div class="modal-form-group">
+						<label for="editPrecioServicio">Precio (COP) *</label>
+						<input type="number" id="editPrecioServicio" name="editPrecioServicio" min="0" step="1000"
+							placeholder="50000" required>
+					</div>
+				</div>
+
+				<div class="modal-actions-editar">
+					<button type="button" class="btn-cancelar-editar" onclick="cerrarModalEditarServicio()">
+						Cancelar
+					</button>
+					<button type="submit" class="btn-guardar-editar">
+						💾 Guardar Cambios
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- ✅ FORMULARIO ACTUALIZADO PARA ELIMINAR CUENTA -->
+	<form id="formEliminarCuenta" th:action="@{/profesional/eliminar-cuenta}" method="post" style="display: none;">
+		<input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+	</form>
+	<meta name="_csrf" th:content="${_csrf.token}">
+	<meta name="_csrf_header" th:content="${_csrf.headerName}">
+
+
+	<script th:src="@{/assets/js/profesional.js}"></script>
+</body>
+
+</html>

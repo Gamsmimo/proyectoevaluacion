@@ -28,4 +28,7 @@ public interface IProfesionalService {
 	Optional<Profesional> findByIdWithAllRelations(Integer id);
 
 	List<Profesional> findByEspecialidadContainingIgnoreCase(String especialidad);
+
+	List<Profesional> findByEspecialidad(String especialidad);
+
 }

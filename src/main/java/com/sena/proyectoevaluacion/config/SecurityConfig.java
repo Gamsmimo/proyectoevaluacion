@@ -36,6 +36,9 @@ public class SecurityConfig {
 				// ✅ HABILITAR CSRF CON CONFIGURACIÓN POR DEFECTO
 				.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
 				.authorizeHttpRequests(authz -> authz
+						// ✅ PERMITIR ACCESO A LAS APIs SIN AUTENTICACIÓN
+						.requestMatchers("/api/**").permitAll()
+
 						// Permisos públicos
 						.requestMatchers("/", "/usuarios/login", "/usuarios/registro", "/css/**", "/js/**",
 								"/assets/**", "/webjars/**", "/images/**", "/error/**")

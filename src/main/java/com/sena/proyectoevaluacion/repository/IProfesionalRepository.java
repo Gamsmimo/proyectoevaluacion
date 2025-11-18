@@ -33,4 +33,5 @@ public interface IProfesionalRepository extends JpaRepository<Profesional, Integ
 	// Buscar todos los profesionales con usuario cargado - VERSIÓN CORREGIDA
 	@Query("SELECT p FROM Profesional p JOIN FETCH p.usuario u")
 	List<Profesional> findAllWithUsuario();
+
 }

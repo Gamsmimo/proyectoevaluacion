@@ -41,41 +41,41 @@ public class UsuarioApiController {
 		}
 	}
 
-	// GET - Obtener usuario por email
-	@GetMapping("/email/{email}")
-	public ResponseEntity<Usuario> obtenerUsuarioPorEmail(@PathVariable String email) {
-		try {
-			Optional<Usuario> usuario = usuarioService.findByEmail(email);
-			return usuario.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-		} catch (Exception e) {
-			return ResponseEntity.internalServerError().build();
-		}
-	}
-
-	// POST - Crear nuevo usuario
+	// POST - Crear nuevo usuario (recibe JSON)
 	@PostMapping
-	public ResponseEntity<Usuario> crearUsuario(@RequestBody Usuario usuario) {
+	public ResponseEntity<?> crearUsuario(@RequestBody Usuario usuario) {
 		try {
-			// Validaciones básicas
-			if (usuario.getEmail() == null || usuario.getEmail().trim().isEmpty()) {
-				return ResponseEntity.badRequest().build();
+			if (usuario.getNombre() == null || usuario.getNombre().trim().isEmpty()) {
+				return ResponseEntity.badRequest().body(Map.of("error", "El nombre es obligatorio"));
 			}
-
-			// Verificar si el email ya existe
+			if (usuario.getEmail() == null || usuario.getEmail().trim().isEmpty()) {
+				return ResponseEntity.badRequest().body(Map.of("error", "El email es obligatorio"));
+			}
+			if (usuario.getPassword() == null || usuario.getPassword().trim().isEmpty()) {
+				return ResponseEntity.badRequest().body(Map.of("error", "La contraseña es obligatoria"));
+			}
+			if (usuario.getPassword().length() < 6) {
+				return ResponseEntity.badRequest()
+						.body(Map.of("error", "La contraseña debe tener al menos 6 caracteres"));
+			}
 			if (usuarioService.existsByEmail(usuario.getEmail())) {
-				return ResponseEntity.badRequest().build();
+				return ResponseEntity.badRequest().body(Map.of("error", "El email ya está registrado"));
 			}
 
 			Usuario usuarioCreado = usuarioService.registrarUsuario(usuario);
-			return ResponseEntity.ok(usuarioCreado);
+			usuarioCreado.setPassword(null);
+			return ResponseEntity.ok(
+					Map.of("success", true, "usuario", usuarioCreado, "message", "Usuario registrado exitosamente"));
 		} catch (Exception e) {
-			return ResponseEntity.internalServerError().build();
+			e.printStackTrace();
+			return ResponseEntity.status(500)
+					.body(Map.of("success", false, "error", "Error al registrar usuario: " + e.getMessage()));
 		}
 	}
 
-	// PUT - Actualizar usuario
+	// PUT - Actualizar usuario (recibe JSON)
 	@PutMapping("/{id}")
-	public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Integer id, @RequestBody Usuario usuario) {
+	public ResponseEntity<?> actualizarUsuario(@PathVariable Integer id, @RequestBody Usuario usuario) {
 		try {
 			Optional<Usuario> usuarioExistente = usuarioService.findById(id);
 			if (usuarioExistente.isEmpty()) {
@@ -83,53 +83,55 @@ public class UsuarioApiController {
 			}
 
 			Usuario usuarioActual = usuarioExistente.get();
-			usuarioActual.setNombre(usuario.getNombre());
-			usuarioActual.setEmail(usuario.getEmail());
-			usuarioActual.setTelefono(usuario.getTelefono());
-
-			// Solo actualizar password si se proporciona uno nuevo
+			if (usuario.getNombre() != null)
+				usuarioActual.setNombre(usuario.getNombre());
+			if (usuario.getEmail() != null)
+				usuarioActual.setEmail(usuario.getEmail());
+			if (usuario.getTelefono() != null)
+				usuarioActual.setTelefono(usuario.getTelefono());
 			if (usuario.getPassword() != null && !usuario.getPassword().trim().isEmpty()) {
 				usuarioActual.setPassword(usuario.getPassword());
 			}
 
 			Usuario usuarioActualizado = usuarioService.save(usuarioActual);
-			return ResponseEntity.ok(usuarioActualizado);
+			usuarioActualizado.setPassword(null); // no devolver contraseña
+			return ResponseEntity.ok(Map.of("success", true, "usuario", usuarioActualizado));
 		} catch (Exception e) {
-			return ResponseEntity.internalServerError().build();
+			return ResponseEntity.status(500)
+					.body(Map.of("success", false, "error", "Error al actualizar usuario: " + e.getMessage()));
 		}
 	}
 
-	// DELETE - Eliminar usuario
+	// DELETE - Eliminar usuario (no necesita JSON, solo ID en la URL)
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> eliminarUsuario(@PathVariable Integer id) {
+	public ResponseEntity<?> eliminarUsuario(@PathVariable Integer id) {
 		try {
-			if (!usuarioService.findById(id).isPresent()) {
-				return ResponseEntity.notFound().build();
+			Optional<Usuario> usuarioExistente = usuarioService.findById(id);
+			if (usuarioExistente.isEmpty()) {
+				return ResponseEntity.status(404).body(Map.of("success", false, "error", "Usuario no encontrado"));
 			}
 
 			usuarioService.deleteById(id);
-			return ResponseEntity.ok().build();
+			return ResponseEntity.ok(Map.of("success", true, "message", "Usuario eliminado"));
 		} catch (Exception e) {
-			return ResponseEntity.internalServerError().build();
+			return ResponseEntity.status(500)
+					.body(Map.of("success", false, "error", "Error al eliminar usuario: " + e.getMessage()));
 		}
 	}
 
-	@GetMapping("/estadisticas")
-	public ResponseEntity<?> obtenerEstadisticas() {
-		try {
-			long totalUsuarios = usuarioService.countTotalUsuarios();
-			long usuariosHoy = usuarioService.countUsuariosRegistradosHoy();
-			List<Usuario> profesionales = usuarioService.findUsuariosProfesionales();
+	// POST - Login (recibe JSON)
+	@PostMapping("/login")
+	public ResponseEntity<?> loginUsuario(@RequestBody Map<String, String> loginData) {
+		String email = loginData.get("email");
+		String password = loginData.get("password");
 
-			// ✅ SOLUCIÓN CON MAP - Más limpio
-			Map<String, Object> estadisticas = new HashMap<>();
-			estadisticas.put("totalUsuarios", totalUsuarios);
-			estadisticas.put("usuariosRegistradosHoy", usuariosHoy);
-			estadisticas.put("totalProfesionales", profesionales.size());
-
-			return ResponseEntity.ok(estadisticas);
-		} catch (Exception e) {
-			return ResponseEntity.internalServerError().build();
+		if (usuarioService.autenticarUsuario(email, password)) {
+			Optional<Usuario> usuarioOpt = usuarioService.findByEmail(email);
+			Usuario usuario = usuarioOpt.get();
+			usuario.setPassword(null);
+			return ResponseEntity.ok(Map.of("success", true, "usuario", usuario));
+		} else {
+			return ResponseEntity.status(401).body(Map.of("success", false, "error", "Credenciales incorrectas"));
 		}
 	}
 }

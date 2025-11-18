@@ -4,7 +4,6 @@ import com.sena.proyectoevaluacion.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -33,10 +32,16 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
-				// ✅ HABILITAR CSRF CON CONFIGURACIÓN POR DEFECTO
-				.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+				// ✅ DESHABILITAR CSRF SOLO PARA RUTAS /api/**
+				.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**") // APIs sin CSRF
+						.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()) // Resto con CSRF
+				)
+
+				// ✅ CONFIGURAR CORS
+				.cors(cors -> cors.configure(http))
+
 				.authorizeHttpRequests(authz -> authz
-						// ✅ PERMITIR ACCESO A LAS APIs SIN AUTENTICACIÓN
+						// ✅ PERMITIR ACCESO COMPLETO A LAS APIs (GET, POST, PUT, DELETE)
 						.requestMatchers("/api/**").permitAll()
 
 						// Permisos públicos
@@ -44,7 +49,7 @@ public class SecurityConfig {
 								"/assets/**", "/webjars/**", "/images/**", "/error/**")
 						.permitAll()
 
-						// ✅ PERMITIR TODOS LOS MÉTODOS HTTP PARA PROFESIONALES
+						// ✅ RUTAS PARA PROFESIONALES
 						.requestMatchers("/profesional/**").hasRole("PROFESIONAL")
 
 						// ✅ RUTAS EXCLUSIVAS PARA USUARIOS NORMALES
@@ -53,13 +58,17 @@ public class SecurityConfig {
 						.hasRole("USER")
 
 						.anyRequest().authenticated())
+
 				.formLogin(form -> form.loginPage("/usuarios/login").loginProcessingUrl("/usuarios/login")
 						.successHandler(authenticationSuccessHandler()).failureUrl("/usuarios/login?error=true")
 						.permitAll())
+
 				.logout(logout -> logout.logoutRequestMatcher(new AntPathRequestMatcher("/usuarios/logout"))
 						.logoutSuccessUrl("/usuarios/login?logout=true").invalidateHttpSession(true)
 						.deleteCookies("JSESSIONID").permitAll())
+
 				.exceptionHandling(exception -> exception.accessDeniedPage("/acceso-denegado"))
+
 				.sessionManagement(session -> session.maximumSessions(1).expiredUrl("/usuarios/login?expired=true"));
 
 		return http.build();

@@ -6,20 +6,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Manejar envío del formulario
 	loginForm.addEventListener('submit', function(e) {
-		const username = document.getElementById('username').value.trim();
+		e.preventDefault(); // Evitar envío por defecto
+
+		const email = document.getElementById('email').value.trim();
 		const password = document.getElementById('password').value;
 
 		// Validación básica
-		if (!username || !password) {
-			e.preventDefault();
+		if (!email || !password) {
 			showMessage('Por favor, completa todos los campos', 'error');
 			return;
 		}
 
 		// Validación de formato de email
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		if (!emailRegex.test(username)) {
-			e.preventDefault();
+		if (!emailRegex.test(email)) {
 			showMessage('Por favor, ingresa un email válido', 'error');
 			return;
 		}
@@ -29,71 +29,79 @@ document.addEventListener('DOMContentLoaded', function() {
 		buttonText.style.display = 'none';
 		loadingSpinner.style.display = 'inline-block';
 
-		// Limpiar mensajes existentes al enviar
-		const existingMessages = document.querySelectorAll('.custom-message');
+		// Limpiar mensajes existentes
+		const existingMessages = document.querySelectorAll('.custom-message, .alert-message');
 		existingMessages.forEach(msg => msg.remove());
+
+		// Enviar datos al backend
+		fetch('http://localhost:51370/api/usuarios/login', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ email, password })
+		})
+			.then(res => res.json().then(data => ({ status: res.status, body: data })))
+			.then(({ status, body }) => {
+				loginButton.disabled = false;
+				buttonText.style.display = 'inline-block';
+				loadingSpinner.style.display = 'none';
+
+				if (status === 200) {
+					showMessage('Inicio de sesión exitoso ✅', 'success');
+					setTimeout(() => window.location.href = '/dashboard', 1500);
+				} else {
+					showMessage(body.error || 'Usuario o contraseña incorrectos ❌', 'error');
+				}
+			})
+			.catch(err => {
+				loginButton.disabled = false;
+				buttonText.style.display = 'inline-block';
+				loadingSpinner.style.display = 'none';
+				showMessage('Error de conexión con el servidor ❌', 'error');
+				console.error(err);
+			});
 	});
 
 	// Función para mostrar mensajes
 	function showMessage(message, type) {
-		// Eliminar mensajes existentes
-		const existingMessages = document.querySelectorAll('.custom-message');
-		existingMessages.forEach(msg => msg.remove());
-
-		// Crear nuevo mensaje
 		const messageDiv = document.createElement('div');
 		messageDiv.className = `custom-message ${type}-message`;
 
 		const icon = type === 'error' ? '❌' : '✅';
-		messageDiv.innerHTML = `
-            <span class="icon">${icon}</span>
-            <span class="text">${message}</span>
-        `;
+		messageDiv.innerHTML = `<span class="icon">${icon}</span> <span class="text">${message}</span>`;
 
 		loginForm.insertBefore(messageDiv, loginForm.firstChild);
 
-		// Auto-eliminar después de 5 segundos
+		// Auto-eliminar después de 5s
 		setTimeout(() => {
 			if (messageDiv.parentNode) {
 				messageDiv.style.opacity = '0';
 				messageDiv.style.transform = 'translateY(-10px)';
-				setTimeout(() => {
-					if (messageDiv.parentNode) {
-						messageDiv.remove();
-					}
-				}, 300);
+				setTimeout(() => { if (messageDiv.parentNode) messageDiv.remove(); }, 300);
 			}
 		}, 5000);
 
-		// Permitir cerrar manualmente
+		// Cerrar manualmente
 		messageDiv.addEventListener('click', function() {
 			this.style.opacity = '0';
 			this.style.transform = 'translateY(-10px)';
-			setTimeout(() => {
-				if (this.parentNode) {
-					this.remove();
-				}
-			}, 300);
+			setTimeout(() => { if (this.parentNode) this.remove(); }, 300);
 		});
 	}
 
-	// Auto-focus en el campo de email
-	const usernameField = document.getElementById('username');
-	if (usernameField && !usernameField.value) {
-		usernameField.focus();
-	}
+	// Auto-focus en email
+	const emailField = document.getElementById('email');
+	if (emailField && !emailField.value) emailField.focus();
 
-	// Limpiar mensajes al empezar a escribir
+	// Limpiar mensajes al escribir
 	const inputs = loginForm.querySelectorAll('input');
 	inputs.forEach(input => {
 		input.addEventListener('input', function() {
-			const messages = document.querySelectorAll('.custom-message');
+			const messages = document.querySelectorAll('.custom-message, .alert-message');
 			messages.forEach(msg => {
 				msg.style.opacity = '0';
 				setTimeout(() => msg.remove(), 300);
 			});
 
-			// Restaurar botón si estaba deshabilitado por error de validación
 			if (loginButton.disabled) {
 				loginButton.disabled = false;
 				buttonText.style.display = 'inline-block';
@@ -102,38 +110,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	});
 
-	// Auto-eliminar mensajes del servidor después de 5 segundos
-	setTimeout(function() {
-		const serverMessages = document.querySelectorAll('.alert-message');
-		serverMessages.forEach(function(message) {
-			message.style.opacity = '0';
-			setTimeout(function() {
-				if (message.parentNode) {
-					message.remove();
-				}
-			}, 500);
-		});
-	}, 5000);
-
-	// Permitir cerrar mensajes del servidor manualmente
-	document.querySelectorAll('.alert-message').forEach(function(message) {
-		message.style.cursor = 'pointer';
-		message.addEventListener('click', function() {
-			this.style.opacity = '0';
-			setTimeout(() => {
-				if (this.parentNode) {
-					this.remove();
-				}
-			}, 500);
-		});
-	});
-
-	// Manejar el evento de antes de descargar la página
+	// Reset botón si se recarga o cierra página
 	window.addEventListener('beforeunload', function() {
-		if (loginButton.disabled) {
-			loginButton.disabled = false;
-			buttonText.style.display = 'inline-block';
-			loadingSpinner.style.display = 'none';
-		}
+		loginButton.disabled = false;
+		buttonText.style.display = 'inline-block';
+		loadingSpinner.style.display = 'none';
 	});
 });

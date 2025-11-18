@@ -2,6 +2,7 @@ package com.sena.proyectoevaluacion.service;
 
 import com.sena.proyectoevaluacion.model.Servicio;
 import com.sena.proyectoevaluacion.repository.IServicioRepository;
+import com.sena.proyectoevaluacion.repository.ICitaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,14 @@ public class ServicioServiceImplement implements IServicioService {
 	@Autowired
 	private IServicioRepository servicioRepository;
 
+	@Autowired
+	private ICitaRepository citaRepository; // <-- FALTABA ESTO
+
+	@Override
+	public boolean tieneCitasAsociadas(Integer idServicio) {
+		return citaRepository.existsByServicioId(idServicio);
+	}
+
 	@Override
 	public List<Servicio> findAll() {
 		try {
@@ -26,7 +35,7 @@ public class ServicioServiceImplement implements IServicioService {
 			return new ArrayList<>();
 		}
 	}
-	
+
 	@Override
 	public Optional<Servicio> findById(Integer id) {
 		try {
@@ -72,5 +81,5 @@ public class ServicioServiceImplement implements IServicioService {
 			return new ArrayList<>();
 		}
 	}
-	
+
 }

@@ -1,28 +1,20 @@
-function cancelarCita(citaId) {
-	if (confirm('¿Estás seguro de que deseas cancelar esta cita?')) {
-		fetch('/citas/cancelar/' + citaId, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-			}
+function cancelarCita(id) {
+	if (!confirm("¿Seguro que deseas cancelar esta cita?")) return;
+
+	const token = document.querySelector('meta[name="_csrf"]').content;
+	const header = document.querySelector('meta[name="_csrf_header"]').content;
+
+	fetch(`/citas/cancelar-cita/${id}`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			[header]: token
+		}
+	})
+		.then(res => res.json())
+		.then(data => {
+			alert(data.message);
+			location.reload();
 		})
-			.then(response => {
-				if (!response.ok) {
-					throw new Error('Error en la respuesta del servidor');
-				}
-				return response.text();
-			})
-			.then(result => {
-				if (result === 'OK') {
-					alert('Cita cancelada exitosamente');
-					location.reload();
-				} else {
-					alert('Error al cancelar la cita: ' + result);
-				}
-			})
-			.catch(error => {
-				console.error('Error:', error);
-				alert('Error al cancelar la cita: ' + error.message);
-			});
-	}
+		.catch(err => console.error(err));
 }

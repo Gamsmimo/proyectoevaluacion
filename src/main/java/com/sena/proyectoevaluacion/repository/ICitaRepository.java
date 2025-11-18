@@ -48,4 +48,7 @@ public interface ICitaRepository extends JpaRepository<Cita, Integer> {
 	// Contar citas por estado para un profesional específico
 	@Query("SELECT COUNT(c) FROM Cita c WHERE c.profesional.id = :profesionalId AND c.estado = :estado")
 	long countByProfesionalIdAndEstado(@Param("profesionalId") Integer profesionalId, @Param("estado") String estado);
+
+	boolean existsByServicioId(Integer servicioId);
+
 }

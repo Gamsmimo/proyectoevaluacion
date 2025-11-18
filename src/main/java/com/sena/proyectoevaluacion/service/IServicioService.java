@@ -15,4 +15,7 @@ public interface IServicioService {
 
 	// Mantener solo búsqueda por nombre
 	List<Servicio> findByNombreContainingIgnoreCase(String nombre);
+
+	// Nuevo: verificar si el servicio tiene citas asociadas
+	boolean tieneCitasAsociadas(Integer idServicio);
 }

@@ -4,6 +4,8 @@ import com.sena.proyectoevaluacion.model.*;
 import com.sena.proyectoevaluacion.service.*;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -11,7 +13,9 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -127,33 +131,6 @@ public class CitaController {
 		}
 	}
 
-	// Método para cancelar cita - CORREGIDO
-	@PostMapping("/cancelar/{id}")
-	@ResponseBody
-	public String cancelarCita(@PathVariable Integer id, HttpSession session) {
-		try {
-			Usuario usuario = (Usuario) session.getAttribute("usuario");
-			if (usuario == null) {
-				return "ERROR: Usuario no autenticado";
-			}
-
-			Optional<Cita> citaOpt = citaService.findById(id);
-			if (citaOpt.isPresent()) {
-				Cita cita = citaOpt.get();
-				// Verificar que la cita pertenece al usuario
-				if (cita.getUsuario().getId().equals(usuario.getId())) {
-					cita.setEstado("Cancelada");
-					citaService.save(cita);
-					return "OK";
-				}
-			}
-
-			return "ERROR: Cita no encontrada";
-		} catch (Exception e) {
-			return "ERROR: " + e.getMessage();
-		}
-	}
-
 	// Método auxiliar para parsear fecha y hora
 	private LocalDateTime parseFechaHora(String fechaHoraStr) {
 		try {
@@ -226,4 +203,42 @@ public class CitaController {
 			return "ReservaCita/citas_usuario";
 		}
 	}
+
+	@PostMapping("/cancelar-cita/{id}")
+	@ResponseBody
+	public ResponseEntity<?> cancelarCita(@PathVariable Integer id, HttpSession session) {
+
+		Usuario usuario = (Usuario) session.getAttribute("usuario");
+
+		if (usuario == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No autorizado");
+		}
+
+		Optional<Cita> citaOpt = citaService.findById(id);
+
+		if (!citaOpt.isPresent()) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cita no encontrada");
+		}
+
+		Cita cita = citaOpt.get();
+
+		// Solo el dueño de la cita puede cancelarla
+		if (!cita.getUsuario().getId().equals(usuario.getId())) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Usted no puede cancelar esta cita");
+		}
+
+		try {
+			citaService.deleteById(id); // 🔥 Elimina completamente la cita
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("message", "Cita cancelada correctamente");
+
+			return ResponseEntity.ok(response);
+
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error al cancelar la cita: " + e.getMessage());
+		}
+	}
+
 }

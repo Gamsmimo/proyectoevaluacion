@@ -252,34 +252,33 @@ function mostrarServiciosBackend(servicios) {
     `;
 }
 
-// Función para eliminar servicio en el backend
 function eliminarServicioBackend(id) {
-	if (confirm('¿Estás seguro de que deseas eliminar este servicio?')) {
-		fetch(`/profesional/eliminar-servicio/${id}`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
+	if (!confirm('¿Estás seguro de que deseas eliminar este servicio?')) {
+		return;
+	}
+
+	const token = document.querySelector('meta[name="_csrf"]').content;
+	const header = document.querySelector('meta[name="_csrf_header"]').content;
+
+	fetch(`/profesional/eliminar-servicio/${id}`, {
+		method: 'POST',
+		headers: {
+			[header]: token
+		}
+	})
+		.then(response => response.json())
+		.then(data => {
+			if (data.success) {
+				showNotification('✅ Servicio eliminado correctamente', 'success');
+				cargarServiciosBackend();
+			} else {
+				showNotification('❌ Error: ' + data.message, 'error');
 			}
 		})
-			.then(response => {
-				if (!response.ok) {
-					throw new Error('Error en la respuesta del servidor');
-				}
-				return response.json();
-			})
-			.then(data => {
-				if (data.success) {
-					showNotification('✅ Servicio eliminado correctamente', 'info');
-					cargarServiciosBackend();
-				} else {
-					showNotification('❌ Error: ' + data.message, 'error');
-				}
-			})
-			.catch(error => {
-				console.error('Error:', error);
-				showNotification('❌ Error al eliminar servicio', 'error');
-			});
-	}
+		.catch(err => {
+			console.error(err);
+			showNotification('❌ Error al eliminar servicio', 'error');
+		});
 }
 
 // ===== FUNCIONES PARA GESTIONAR CITAS =====
@@ -569,10 +568,18 @@ function guardarServicioEditado(event) {
 	submitBtn.innerHTML = '⏳ Guardando...';
 	submitBtn.disabled = true;
 
+	const token = document.querySelector('meta[name="_csrf"]').content;
+	const header = document.querySelector('meta[name="_csrf_header"]').content;
+
 	fetch('/profesional/actualizar-servicio', {
 		method: 'POST',
+		headers: {
+			[header]: token
+		},
 		body: formData
 	})
+
+
 		.then(response => {
 			if (!response.ok) {
 				throw new Error('Error en la respuesta del servidor');

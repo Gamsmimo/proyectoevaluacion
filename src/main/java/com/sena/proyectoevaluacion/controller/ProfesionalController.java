@@ -6,6 +6,7 @@ import com.sena.proyectoevaluacion.model.Cita;
 import com.sena.proyectoevaluacion.model.Servicio;
 import com.sena.proyectoevaluacion.service.IProfesionalService;
 import com.sena.proyectoevaluacion.service.IUsuarioService;
+import com.sena.proyectoevaluacion.service.ProfesionalServicioRegistry;
 import com.sena.proyectoevaluacion.service.ICitaService;
 import com.sena.proyectoevaluacion.service.IServicioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,9 @@ import java.util.*;
 @Controller
 @RequestMapping("/profesional")
 public class ProfesionalController {
+
+	@Autowired
+	private ProfesionalServicioRegistry servicioRegistry;
 
 	@Autowired
 	private IProfesionalService profesionalService;
@@ -312,7 +316,14 @@ public class ProfesionalController {
 		}
 
 		try {
-			List<Servicio> servicios = servicioService.findAll();
+			List<Integer> idsServicios = servicioRegistry
+					.obtenerServiciosDeProfesional(usuario.getProfesional().getId());
+			List<Servicio> servicios = new ArrayList<>();
+
+			for (Integer id : idsServicios) {
+				servicioService.findById(id).ifPresent(servicios::add);
+			}
+
 			return ResponseEntity.ok(servicios);
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -363,6 +374,11 @@ public class ProfesionalController {
 		}
 
 		try {
+			if (servicioService.tieneCitasAsociadas(id)) {
+				return ResponseEntity.status(HttpStatus.CONFLICT)
+						.body("No se puede eliminar el servicio porque tiene citas asociadas.");
+			}
+
 			servicioService.deleteById(id);
 
 			Map<String, Object> response = new HashMap<>();
@@ -528,10 +544,10 @@ public class ProfesionalController {
 			servicio.setDuracion(duracionServicio + " minutos");
 			servicio.setPrecio(precioServicio);
 
-			// IMPORTANTE: NO ASIGNAR profesional porque NO existe en tu BD
-			// servicio.setProfesional(...); ❌ ELIMINADO
-
 			Servicio servicioGuardado = servicioService.save(servicio);
+
+			// Registrar servicio para este profesional en memoria
+			servicioRegistry.agregarServicioAProfesional(usuario.getProfesional().getId(), servicioGuardado.getId());
 
 			Map<String, Object> response = new HashMap<>();
 			response.put("success", true);
@@ -547,4 +563,5 @@ public class ProfesionalController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 		}
 	}
+
 }

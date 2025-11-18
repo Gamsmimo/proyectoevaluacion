@@ -142,13 +142,10 @@ public class CitaServiceImplement implements ICitaService {
 		}
 	}
 
-
-
 	@Override
 	public Optional<Cita> findByIdWithAllRelations(Integer id) {
 		return citaRepository.findByIdWithAllRelations(id);
 	}
-
 
 	private LocalDateTime parseFechaHoraString(String fechaHoraStr) {
 		try {
@@ -165,4 +162,5 @@ public class CitaServiceImplement implements ICitaService {
 			return LocalDateTime.now();
 		}
 	}
+
 }

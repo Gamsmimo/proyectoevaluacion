@@ -12,6 +12,8 @@ import com.sena.proyectoevaluacion.service.IServicioService;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +22,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -51,6 +55,32 @@ public class UsuarioController {
 		return "Registro/registro";
 	}
 
+	@GetMapping("/citas_usuario")
+	public String citas_usuario(HttpSession session, Model model) {
+		// ✅ OBTENER USUARIO DE SPRING SECURITY
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName();
+
+		Optional<Usuario> usuarioOpt = usuarioService.findByEmail(email);
+		if (usuarioOpt.isEmpty()) {
+			return "redirect:/usuarios/login";
+		}
+
+		Usuario usuario = usuarioOpt.get();
+		session.setAttribute("usuario", usuario);
+
+		try {
+			List<Cita> citasUsuario = citaService.findByUsuarioId(usuario.getId());
+			model.addAttribute("citas", citasUsuario);
+			model.addAttribute("usuario", usuario);
+			return "ReservaCita/citas_usuario";
+		} catch (Exception e) {
+			model.addAttribute("error", "Error al cargar las citas: " + e.getMessage());
+			model.addAttribute("citas", new ArrayList<Cita>());
+			return "ReservaCita/citas_usuario";
+		}
+	}
+
 	@GetMapping("/index")
 	public String index() {
 		return "index";
@@ -59,10 +89,17 @@ public class UsuarioController {
 	// MÉTODO ÚNICO PARA RESERVAR CITA (GET) - CORREGIDO
 	@GetMapping("/reservarcita")
 	public String reservarcita(Model model, HttpSession session) {
-		Usuario usuario = (Usuario) session.getAttribute("usuario");
-		if (usuario == null) {
+		// ✅ OBTENER USUARIO DE SPRING SECURITY
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName();
+
+		Optional<Usuario> usuarioOpt = usuarioService.findByEmail(email);
+		if (usuarioOpt.isEmpty()) {
 			return "redirect:/usuarios/login";
 		}
+
+		Usuario usuario = usuarioOpt.get();
+		session.setAttribute("usuario", usuario);
 
 		try {
 			// Cargar profesionales
@@ -100,17 +137,24 @@ public class UsuarioController {
 
 	@GetMapping("/perfilusuario")
 	public String perfilusuario(HttpSession session, Model model) {
-		Usuario usuario = (Usuario) session.getAttribute("usuario");
-		if (usuario != null) {
-			Optional<Usuario> usuarioActualizado = usuarioService.findById(usuario.getId());
+		// ✅ OBTENER USUARIO DE SPRING SECURITY
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName();
+
+		Optional<Usuario> usuarioOpt = usuarioService.findByEmail(email);
+		if (usuarioOpt.isPresent()) {
+			Usuario usuario = usuarioOpt.get();
+
+			// Cargar usuario con relaciones actualizadas
+			Optional<Usuario> usuarioActualizado = usuarioService.findByIdWithAllRelations(usuario.getId());
 			if (usuarioActualizado.isPresent()) {
-				Usuario usuarioConRelaciones = usuarioActualizado.get();
-				model.addAttribute("usuario", usuarioConRelaciones);
-				session.setAttribute("usuario", usuarioConRelaciones);
+				usuario = usuarioActualizado.get();
+				model.addAttribute("usuario", usuario);
+				session.setAttribute("usuario", usuario);
 
 				// Ahora podemos acceder directamente a través de la relación
-				if (usuarioConRelaciones.getProfesional() != null) {
-					model.addAttribute("profesional", usuarioConRelaciones.getProfesional());
+				if (usuario.getProfesional() != null) {
+					model.addAttribute("profesional", usuario.getProfesional());
 				}
 			} else {
 				model.addAttribute("usuario", usuario);
@@ -129,8 +173,21 @@ public class UsuarioController {
 
 	@GetMapping("/home")
 	public String home(HttpSession session, Model model) {
-		Usuario usuario = (Usuario) session.getAttribute("usuario");
-		if (usuario != null) {
+		// ✅ OBTENER USUARIO DE SPRING SECURITY
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName();
+
+		Optional<Usuario> usuarioOpt = usuarioService.findByEmail(email);
+		if (usuarioOpt.isPresent()) {
+			Usuario usuario = usuarioOpt.get();
+
+			// Cargar usuario con relaciones
+			Optional<Usuario> usuarioCompleto = usuarioService.findByIdWithAllRelations(usuario.getId());
+			if (usuarioCompleto.isPresent()) {
+				usuario = usuarioCompleto.get();
+				session.setAttribute("usuario", usuario);
+			}
+
 			// Cargar citas del usuario
 			List<Cita> citasUsuario = citaService.findByUsuarioId(usuario.getId());
 			model.addAttribute("citas", citasUsuario);
@@ -141,47 +198,6 @@ public class UsuarioController {
 		}
 	}
 
-	@PostMapping("/login")
-	public String procesarLogin(@RequestParam String email, @RequestParam String password,
-			RedirectAttributes redirectAttributes, HttpSession session) {
-		try {
-			boolean autenticado = usuarioService.autenticarUsuario(email, password);
-			if (autenticado) {
-				Optional<Usuario> usuarioOpt = usuarioService.findByEmail(email);
-				if (usuarioOpt.isPresent()) {
-					Usuario usuario = usuarioOpt.get();
-
-					// Cargar el usuario con todas las relaciones para verificar si es profesional
-					Optional<Usuario> usuarioCompleto = usuarioService.findByIdWithAllRelations(usuario.getId());
-					if (usuarioCompleto.isPresent()) {
-						usuario = usuarioCompleto.get();
-					}
-
-					session.setAttribute("usuario", usuario);
-
-					// Verificar si es profesional usando la relación cargada
-					if (usuario.getProfesional() != null) {
-						System.out.println("DEBUG: Usuario es profesional - ID: " + usuario.getProfesional().getId());
-						redirectAttributes.addFlashAttribute("success", "¡Inicio de sesión exitoso como profesional!");
-						return "redirect:/profesional/dashboard";
-					} else {
-						System.out.println("DEBUG: Usuario NO es profesional");
-						redirectAttributes.addFlashAttribute("success", "¡Inicio de sesión exitoso!");
-						return "redirect:/usuarios/home";
-					}
-				}
-			} else {
-				redirectAttributes.addFlashAttribute("error", "Email o contraseña incorrectos");
-				return "redirect:/usuarios/login";
-			}
-		} catch (Exception e) {
-			redirectAttributes.addFlashAttribute("error", "Error en el servidor: " + e.getMessage());
-			return "redirect:/usuarios/login";
-		}
-		redirectAttributes.addFlashAttribute("error", "Error en el inicio de sesión");
-		return "redirect:/usuarios/login";
-	}
-
 	@PostMapping("/registro")
 	public String procesarRegistro(@RequestParam String nombre, @RequestParam String email,
 			@RequestParam String telefono, @RequestParam String password, @RequestParam String confirmPassword,
@@ -190,56 +206,40 @@ public class UsuarioController {
 			HttpSession session) {
 
 		try {
+			// Validaciones básicas
+			if (nombre == null || nombre.trim().isEmpty()) {
+				redirectAttributes.addFlashAttribute("error", "El nombre es obligatorio");
+				return "redirect:/usuarios/registro";
+			}
+
+			if (email == null || email.trim().isEmpty()) {
+				redirectAttributes.addFlashAttribute("error", "El email es obligatorio");
+				return "redirect:/usuarios/registro";
+			}
+
+			if (password == null || password.trim().isEmpty()) {
+				redirectAttributes.addFlashAttribute("error", "La contraseña es obligatoria");
+				return "redirect:/usuarios/registro";
+			}
+
 			if (!password.equals(confirmPassword)) {
 				redirectAttributes.addFlashAttribute("error", "Las contraseñas no coinciden");
 				return "redirect:/usuarios/registro";
 			}
 
-			// Crear usuario con constructor que acepte estos parámetros
-			Usuario usuario = new Usuario();
-			usuario.setNombre(nombre);
-			usuario.setEmail(email);
-			usuario.setTelefono(telefono);
-			usuario.setPassword(password);
-			usuario.setFechaRegistro(LocalDateTime.now()); // CAMBIO: Usar LocalDateTime directamente
+			// ✅ REGISTRAR USUARIO USANDO EL SERVICE
+			Usuario usuarioRegistrado = usuarioService.registrarUsuario(nombre, email, telefono, password);
 
-			Usuario usuarioRegistrado = usuarioService.registrarUsuario(usuario);
-
-			if ("profesional".equals(tipoRegistro)) {
-				if (especialidad == null || especialidad.trim().isEmpty()) {
-					redirectAttributes.addFlashAttribute("error", "La especialidad es obligatoria para profesionales");
-					return "redirect:/usuarios/registro";
-				}
-				if (horarioDisponible == null || horarioDisponible.trim().isEmpty()) {
-					redirectAttributes.addFlashAttribute("error",
-							"El horario disponible es obligatorio para profesionales");
-					return "redirect:/usuarios/registro";
-				}
-
-				// Convertir String a LocalDateTime para horarioDisponible
-				LocalDateTime horario = parseHorarioDisponible(horarioDisponible);
-
-				// Crear profesional usando la relación
-				Profesional profesional = new Profesional(especialidad, horario, usuarioRegistrado);
-				profesionalService.save(profesional);
-
-				// Recargar el usuario con las relaciones actualizadas
-				Optional<Usuario> usuarioActualizado = usuarioService
-						.findByIdWithAllRelations(usuarioRegistrado.getId());
-				if (usuarioActualizado.isPresent()) {
-					session.setAttribute("usuario", usuarioActualizado.get());
-				} else {
-					session.setAttribute("usuario", usuarioRegistrado);
-				}
-
-				redirectAttributes.addFlashAttribute("success",
-						"¡Registro como profesional exitoso! Bienvenido " + nombre);
-				return "redirect:/profesional/dashboard";
+			// Si es profesional, registrar también como profesional
+			if ("profesional".equals(tipoRegistro) && especialidad != null && !especialidad.trim().isEmpty()) {
+				usuarioService.registrarProfesional(usuarioRegistrado, especialidad,
+						horarioDisponible != null ? horarioDisponible : "Lunes a Viernes 08:00-18:00");
 			}
 
 			redirectAttributes.addFlashAttribute("success",
 					"¡Registro exitoso! Bienvenido " + nombre + ". Ahora puedes iniciar sesión.");
-			return "redirect:/usuarios/login";
+
+			return "redirect:/usuarios/login?registered=true";
 
 		} catch (RuntimeException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -256,10 +256,17 @@ public class UsuarioController {
 			@RequestParam String fecha, @RequestParam String hora, HttpSession session,
 			RedirectAttributes redirectAttributes) {
 
-		Usuario usuario = (Usuario) session.getAttribute("usuario");
-		if (usuario == null) {
+		// ✅ OBTENER USUARIO DE SPRING SECURITY
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName();
+
+		Optional<Usuario> usuarioOpt = usuarioService.findByEmail(email);
+		if (usuarioOpt.isEmpty()) {
 			return "redirect:/usuarios/login";
 		}
+
+		Usuario usuario = usuarioOpt.get();
+		session.setAttribute("usuario", usuario);
 
 		try {
 			// Validar campos requeridos
@@ -330,16 +337,27 @@ public class UsuarioController {
 		}
 	}
 
-	// Método para actualizar perfil de usuario
-	@PostMapping("/actualizar-perfil")
-	public String actualizarPerfil(@RequestParam String nombre, @RequestParam String email,
-			@RequestParam String telefono, HttpSession session, RedirectAttributes redirectAttributes) {
-		Usuario usuario = (Usuario) session.getAttribute("usuario");
-		if (usuario == null) {
-			return "redirect:/usuarios/login";
-		}
+	// Agrega este método para actualizar el perfil
+	@PostMapping("/actualizar-perfil-ajax")
+	@ResponseBody
+	public Map<String, Object> actualizarPerfilAjax(@RequestParam String nombre, @RequestParam String email,
+			@RequestParam String telefono, HttpSession session) {
+		Map<String, Object> response = new HashMap<>();
 
 		try {
+			// ✅ OBTENER USUARIO DE SPRING SECURITY
+			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+			String userEmail = authentication.getName();
+
+			Optional<Usuario> usuarioOpt = usuarioService.findByEmail(userEmail);
+			if (usuarioOpt.isEmpty()) {
+				response.put("success", false);
+				response.put("message", "Usuario no autenticado");
+				return response;
+			}
+
+			Usuario usuario = usuarioOpt.get();
+
 			// Actualizar información del usuario
 			usuario.setNombre(nombre);
 			usuario.setEmail(email);
@@ -348,13 +366,15 @@ public class UsuarioController {
 			Usuario usuarioActualizado = usuarioService.save(usuario);
 			session.setAttribute("usuario", usuarioActualizado);
 
-			redirectAttributes.addFlashAttribute("success", "Perfil actualizado exitosamente");
-			return "redirect:/usuarios/perfilusuario";
+			response.put("success", true);
+			response.put("message", "Perfil actualizado exitosamente");
 
 		} catch (Exception e) {
-			redirectAttributes.addFlashAttribute("error", "Error al actualizar el perfil: " + e.getMessage());
-			return "redirect:/usuarios/perfilusuario";
+			response.put("success", false);
+			response.put("message", "Error al actualizar el perfil: " + e.getMessage());
 		}
+
+		return response;
 	}
 
 	// En tu controlador existente - agrega estos métodos
@@ -427,31 +447,6 @@ public class UsuarioController {
 		}
 	}
 
-	@GetMapping("/profesional/dashboard")
-	public String dashboardProfesional(HttpSession session, Model model) {
-		Usuario usuario = (Usuario) session.getAttribute("usuario");
-		if (usuario == null) {
-			return "redirect:/usuarios/login";
-		}
-
-		// Cargar usuario con relaciones actualizadas
-		Optional<Usuario> usuarioActualizado = usuarioService.findByIdWithAllRelations(usuario.getId());
-		if (usuarioActualizado.isPresent()) {
-			usuario = usuarioActualizado.get();
-			session.setAttribute("usuario", usuario);
-		}
-
-		Profesional profesional = usuario.getProfesional();
-		if (profesional == null) {
-			return "redirect:/usuarios/home";
-		}
-
-		model.addAttribute("usuario", usuario);
-		model.addAttribute("profesional", profesional);
-
-		return "Profesional/profesional"; // Asegúrate de que esta ruta sea correcta
-	}
-
 	// Método auxiliar para parsear horario disponible
 	private LocalDateTime parseHorarioDisponible(String horarioStr) {
 		try {
@@ -482,4 +477,68 @@ public class UsuarioController {
 			return LocalDateTime.now();
 		}
 	}
+
+	@PostMapping("/perfilusuario")
+	public String actualizarPerfilUsuario(@RequestParam String nombre, @RequestParam String email,
+			@RequestParam String telefono, HttpSession session, RedirectAttributes redirectAttributes) {
+
+		// ✅ OBTENER USUARIO DE SPRING SECURITY
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String userEmail = authentication.getName();
+
+		Optional<Usuario> usuarioOpt = usuarioService.findByEmail(userEmail);
+		if (usuarioOpt.isEmpty()) {
+			return "redirect:/usuarios/login";
+		}
+
+		Usuario usuario = usuarioOpt.get();
+
+		try {
+			// Actualizar información del usuario
+			usuario.setNombre(nombre);
+			usuario.setEmail(email);
+			usuario.setTelefono(telefono);
+
+			Usuario usuarioActualizado = usuarioService.save(usuario);
+			session.setAttribute("usuario", usuarioActualizado);
+
+			redirectAttributes.addFlashAttribute("success", "Perfil actualizado exitosamente");
+			return "redirect:/usuarios/perfilusuario";
+
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error", "Error al actualizar el perfil: " + e.getMessage());
+			return "redirect:/usuarios/perfilusuario";
+		}
+	}
+
+	@PostMapping("/eliminar-cuenta")
+	@ResponseBody
+	public Map<String, Object> eliminarCuentaAjax(HttpSession session) {
+
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName();
+
+		Map<String, Object> response = new HashMap<>();
+
+		Optional<Usuario> usuarioOpt = usuarioService.findByEmail(email);
+
+		if (usuarioOpt.isEmpty()) {
+			response.put("success", false);
+			response.put("message", "Usuario no encontrado");
+			return response;
+		}
+
+		try {
+			usuarioService.deleteById(usuarioOpt.get().getId());
+			session.invalidate();
+			response.put("success", true);
+			return response;
+
+		} catch (Exception e) {
+			response.put("success", false);
+			response.put("message", e.getMessage());
+			return response;
+		}
+	}
+
 }

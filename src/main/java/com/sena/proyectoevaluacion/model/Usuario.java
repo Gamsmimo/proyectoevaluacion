@@ -21,7 +21,7 @@ public class Usuario {
 	private LocalDateTime fechaRegistro; // Cambiar de String a LocalDateTime
 
 	// Relación: Un usuario puede ser un profesional
-	@OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
+	@OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JsonIgnore
 	private Profesional profesional;
 

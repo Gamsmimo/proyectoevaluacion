@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,7 +19,12 @@ public class CitaServiceImplement implements ICitaService {
 
 	@Override
 	public List<Cita> findAll() {
-		return citaRepository.findAll();
+		try {
+			return citaRepository.findAll();
+		} catch (Exception e) {
+			System.err.println("Error en findAll: " + e.getMessage());
+			return new ArrayList<>();
+		}
 	}
 
 	@Override
@@ -40,12 +46,28 @@ public class CitaServiceImplement implements ICitaService {
 
 	@Override
 	public List<Cita> findByUsuarioId(Integer usuarioId) {
-		return citaRepository.findByUsuarioId(usuarioId);
+		try {
+			List<Cita> citas = citaRepository.findByUsuarioId(usuarioId);
+
+			System.out.println("=== CITAS POR USUARIO ===");
+			System.out.println("Usuario ID: " + usuarioId);
+			System.out.println("Citas encontradas: " + citas.size());
+
+			return citas;
+		} catch (Exception e) {
+			System.err.println("Error en findByUsuarioId: " + e.getMessage());
+			return new ArrayList<>();
+		}
 	}
 
 	@Override
 	public List<Cita> findByProfesionalId(Integer profesionalId) {
-		return citaRepository.findByProfesionalId(profesionalId);
+		try {
+			return citaRepository.findByProfesionalId(profesionalId);
+		} catch (Exception e) {
+			System.err.println("Error en findByProfesionalId: " + e.getMessage());
+			return new ArrayList<>();
+		}
 	}
 
 	@Override
@@ -60,19 +82,53 @@ public class CitaServiceImplement implements ICitaService {
 
 	@Override
 	public List<Cita> findByProfesionalIdAndEstado(Integer profesionalId, String estado) {
-		return citaRepository.findByProfesionalIdAndEstado(profesionalId, estado);
+		try {
+			List<Cita> citas = citaRepository.findByProfesionalIdAndEstado(profesionalId, estado);
+
+			System.out.println("=== CITAS POR PROFESIONAL Y ESTADO ===");
+			System.out.println("Profesional ID: " + profesionalId);
+			System.out.println("Estado: " + estado);
+			System.out.println("Citas encontradas: " + citas.size());
+
+			return citas;
+		} catch (Exception e) {
+			System.err.println("Error en findByProfesionalIdAndEstado: " + e.getMessage());
+			System.out.println("Profesional ID: " + profesionalId + ", Estado: " + estado);
+			e.printStackTrace();
+
+			// Fallback: filtrar manualmente si el método del repository falla
+			return filtrarCitasManual(profesionalId, estado);
+		}
+	}
+
+	// Método de respaldo en caso de que el repository falle
+	private List<Cita> filtrarCitasManual(Integer profesionalId, String estado) {
+		try {
+			List<Cita> todasLasCitas = citaRepository.findByProfesionalId(profesionalId);
+			List<Cita> citasFiltradas = new ArrayList<>();
+
+			for (Cita cita : todasLasCitas) {
+				if (estado.equals(cita.getEstado())) {
+					citasFiltradas.add(cita);
+				}
+			}
+
+			System.out.println("Método manual - Citas filtradas: " + citasFiltradas.size());
+			return citasFiltradas;
+
+		} catch (Exception e) {
+			System.err.println("Error en método manual: " + e.getMessage());
+			return new ArrayList<>();
+		}
 	}
 
 	@Override
 	public boolean verificarDisponibilidad(Integer profesionalId, LocalDateTime fechaHora) {
 		try {
-			// Buscar citas existentes para el profesional en la misma fecha y hora
 			List<Cita> citasExistentes = citaRepository.findByProfesionalIdAndFechaHora(profesionalId, fechaHora);
-
-			// Si no hay citas existentes, está disponible
 			boolean disponible = citasExistentes.isEmpty();
 
-			System.out.println("DEBUG - Verificando disponibilidad:");
+			System.out.println("=== VERIFICACIÓN DISPONIBILIDAD ===");
 			System.out.println("Profesional ID: " + profesionalId);
 			System.out.println("Fecha/Hora: " + fechaHora);
 			System.out.println("Citas existentes: " + citasExistentes.size());
@@ -82,44 +138,26 @@ public class CitaServiceImplement implements ICitaService {
 
 		} catch (Exception e) {
 			System.err.println("Error al verificar disponibilidad: " + e.getMessage());
-			e.printStackTrace();
 			return false;
 		}
 	}
 
-	// Mantener el método con String por compatibilidad (si es necesario)
-	@Override
-	public boolean verificarDisponibilidad(Integer profesionalId, String fechaHora) {
-		try {
-			// Convertir String a LocalDateTime
-			LocalDateTime fechaHoraLocal = parseFechaHoraString(fechaHora);
-			return verificarDisponibilidad(profesionalId, fechaHoraLocal);
-		} catch (Exception e) {
-			System.err.println("Error al convertir fecha String: " + e.getMessage());
-			return false;
-		}
-	}
+
 
 	@Override
 	public Optional<Cita> findByIdWithAllRelations(Integer id) {
 		return citaRepository.findByIdWithAllRelations(id);
 	}
 
-	// Método auxiliar para convertir String a LocalDateTime
+
 	private LocalDateTime parseFechaHoraString(String fechaHoraStr) {
 		try {
-			// Si viene en formato "yyyy-MM-dd HH:mm:ss"
 			if (fechaHoraStr.contains(" ") && fechaHoraStr.contains(":")) {
-				// Reemplazar espacio por T para formato ISO
 				String isoFormat = fechaHoraStr.replace(" ", "T");
 				return LocalDateTime.parse(isoFormat);
-			}
-			// Si ya viene en formato ISO
-			else if (fechaHoraStr.contains("T")) {
+			} else if (fechaHoraStr.contains("T")) {
 				return LocalDateTime.parse(fechaHoraStr);
-			}
-			// Formato por defecto
-			else {
+			} else {
 				return LocalDateTime.parse(fechaHoraStr);
 			}
 		} catch (Exception e) {

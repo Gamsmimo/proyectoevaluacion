@@ -13,8 +13,6 @@ public interface IServicioService {
 
 	void deleteById(Integer id);
 
-
-
 	// Mantener solo búsqueda por nombre
 	List<Servicio> findByNombreContainingIgnoreCase(String nombre);
 }

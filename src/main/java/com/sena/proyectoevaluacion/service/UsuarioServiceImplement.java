@@ -4,6 +4,7 @@ import com.sena.proyectoevaluacion.model.Profesional;
 import com.sena.proyectoevaluacion.model.Usuario;
 import com.sena.proyectoevaluacion.repository.IUsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,10 @@ public class UsuarioServiceImplement implements IUsuarioService {
 
 	@Autowired
 	private IProfesionalService profesionalService;
+
+	// ✅ AGREGAR PasswordEncoder para Spring Security
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
 	@Override
 	public List<Usuario> findAll() {
@@ -39,7 +44,12 @@ public class UsuarioServiceImplement implements IUsuarioService {
 	@Override
 	@Transactional
 	public void deleteById(Integer id) {
-		usuarioRepository.deleteById(id);
+		try {
+			// Opcional: puedes agregar lógica adicional antes de eliminar
+			usuarioRepository.deleteById(id);
+		} catch (Exception e) {
+			throw new RuntimeException("Error al eliminar usuario: " + e.getMessage());
+		}
 	}
 
 	@Override
@@ -55,8 +65,16 @@ public class UsuarioServiceImplement implements IUsuarioService {
 	@Override
 	public boolean autenticarUsuario(String email, String password) {
 		try {
-			Optional<Usuario> usuarioOpt = usuarioRepository.findByEmailAndPassword(email, password);
-			return usuarioOpt.isPresent();
+			// ✅ USAR PasswordEncoder para verificar la contraseña
+			Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+
+			if (usuarioOpt.isPresent()) {
+				Usuario usuario = usuarioOpt.get();
+				// Verificar si la contraseña en texto plano coincide con la encriptada
+				return passwordEncoder.matches(password, usuario.getPassword());
+			}
+			return false;
+
 		} catch (Exception e) {
 			System.err.println("Error en autenticación: " + e.getMessage());
 			return false;
@@ -92,6 +110,12 @@ public class UsuarioServiceImplement implements IUsuarioService {
 				throw new RuntimeException("El email " + usuario.getEmail() + " ya está registrado");
 			}
 
+			// ✅ ENCRIPTAR CONTRASEÑA ANTES DE GUARDAR
+			if (usuario.getPassword() != null && !usuario.getPassword().trim().isEmpty()) {
+				String passwordEncriptada = passwordEncoder.encode(usuario.getPassword());
+				usuario.setPassword(passwordEncriptada);
+			}
+
 			// Asegurar que la fecha de registro se establezca como LocalDateTime
 			if (usuario.getFechaRegistro() == null) {
 				usuario.setFechaRegistro(LocalDateTime.now());
@@ -123,7 +147,7 @@ public class UsuarioServiceImplement implements IUsuarioService {
 		usuario.setNombre(nombre);
 		usuario.setEmail(email);
 		usuario.setTelefono(telefono);
-		usuario.setPassword(password);
+		usuario.setPassword(password); // Será encriptado en registrarUsuario(Usuario usuario)
 		usuario.setFechaRegistro(LocalDateTime.now());
 
 		return registrarUsuario(usuario);
@@ -163,6 +187,11 @@ public class UsuarioServiceImplement implements IUsuarioService {
 	public Usuario registrarProfesional(Usuario usuario, String especialidad, String horarioDisponible) {
 		// Primero guardar el usuario si no tiene ID
 		if (usuario.getId() == null) {
+			// ✅ Asegurar que la contraseña se encripte también para profesionales
+			if (usuario.getPassword() != null && !usuario.getPassword().trim().isEmpty()) {
+				String passwordEncriptada = passwordEncoder.encode(usuario.getPassword());
+				usuario.setPassword(passwordEncriptada);
+			}
 			usuario = save(usuario);
 		}
 

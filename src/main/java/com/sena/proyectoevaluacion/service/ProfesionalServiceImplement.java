@@ -28,7 +28,19 @@ public class ProfesionalServiceImplement implements IProfesionalService {
 	@Override
 	@Transactional
 	public Profesional save(Profesional profesional) {
-		return profesionalRepository.save(profesional);
+		try {
+			System.out.println("💾 Guardando profesional - ID: " + profesional.getId());
+			System.out.println("📝 Especialidad: " + profesional.getEspecialidad());
+			System.out.println("⏰ Horario: " + profesional.getHorarioDisponible());
+
+			Profesional guardado = profesionalRepository.save(profesional);
+			System.out.println("✅ Profesional guardado exitosamente - ID: " + guardado.getId());
+
+			return guardado;
+		} catch (Exception e) {
+			System.err.println("❌ Error al guardar profesional: " + e.getMessage());
+			throw e;
+		}
 	}
 
 	@Override

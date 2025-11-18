@@ -12,9 +12,11 @@ public class Servicio {
 	@Column(name = "nombre", nullable = false)
 	private String nombre;
 
+	// CORREGIR: Usar el nombre exacto de la columna en la BD
 	@Column(name = "descripción", length = 255)
 	private String descripcion;
 
+	// CORREGIR: Usar el nombre exacto de la columna en la BD
 	@Column(name = "duración")
 	private String duracion;
 
@@ -71,6 +73,15 @@ public class Servicio {
 
 	public void setPrecio(Double precio) {
 		this.precio = precio;
+	}
+
+	// MÉTODOS DE COMPATIBILIDAD AGREGADOS:
+	public Double getValor() {
+		return this.precio;
+	}
+
+	public String getTiempoEstimado() {
+		return this.duracion;
 	}
 
 	@Override

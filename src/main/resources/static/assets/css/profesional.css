@@ -404,6 +404,7 @@ body {
 	padding: 2rem;
 	border-radius: 12px;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	margin-bottom: 2rem;
 }
 
 .section-header {
@@ -416,6 +417,9 @@ body {
 .section-header h3 {
 	color: #2d3748;
 	font-size: 1.3rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
 }
 
 .btn-view-all {
@@ -439,27 +443,122 @@ body {
 	gap: 1rem;
 }
 
+/* ===== ESTILOS PARA LAS CITAS ===== */
 .appointment-item {
 	background: #f7fafc;
-	padding: 1rem;
+	padding: 1.5rem;
 	border-radius: 8px;
-	border-left: 4px solid #667eea;
+	margin-bottom: 1rem;
 	display: flex;
 	justify-content: space-between;
-	align-items: center;
+	align-items: flex-start;
+	transition: all 0.3s ease;
+	border-left: 4px solid #e2e8f0;
+}
+
+.appointment-item.pending {
+	border-left-color: #f59e0b;
+	background: #fffbf0;
+}
+
+.appointment-item.accepted {
+	border-left-color: #10b981;
+	background: #f0fff4;
+}
+
+.appointment-item.completed {
+	border-left-color: #3b82f6;
+	background: #f0f4ff;
+}
+
+.appointment-item.rejected {
+	border-left-color: #e53e3e;
+	background: #fff5f5;
+}
+
+.appointment-info {
+	flex: 1;
 }
 
 .appointment-info h4 {
 	color: #2d3748;
 	margin-bottom: 0.5rem;
+	font-size: 1.1rem;
 }
 
 .appointment-info p {
 	color: #718096;
 	font-size: 0.9rem;
+	margin-bottom: 0.25rem;
 }
 
-.appointment-time {
+.appointment-actions {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	min-width: 200px;
+	justify-content: flex-end;
+}
+
+.btn-accept,
+.btn-reject,
+.btn-complete {
+	padding: 8px 16px;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 500;
+	transition: all 0.3s ease;
+	font-size: 0.9rem;
+	white-space: nowrap;
+}
+
+.btn-accept {
+	background: #10b981;
+	color: white;
+}
+
+.btn-accept:hover {
+	background: #059669;
+	transform: translateY(-2px);
+}
+
+.btn-reject {
+	background: #e53e3e;
+	color: white;
+}
+
+.btn-reject:hover {
+	background: #c53030;
+	transform: translateY(-2px);
+}
+
+.btn-complete {
+	background: #3b82f6;
+	color: white;
+}
+
+.btn-complete:hover {
+	background: #2563eb;
+	transform: translateY(-2px);
+}
+
+.status-pending {
+	color: #f59e0b;
+	font-weight: 600;
+}
+
+.status-completed {
+	color: #10b981;
+	font-weight: 600;
+}
+
+.status-rejected {
+	color: #e53e3e;
+	font-weight: 600;
+}
+
+.badge-count {
 	background: #667eea;
 	color: white;
 	padding: 4px 12px;
@@ -472,56 +571,112 @@ body {
 	text-align: center;
 	padding: 3rem;
 	color: #a0aec0;
+	font-style: italic;
 }
 
-.empty-state p {
-	font-size: 1.1rem;
+.appointment-time {
+	background: #667eea;
+	color: white;
+	padding: 4px 12px;
+	border-radius: 20px;
+	font-size: 0.8rem;
+	font-weight: 600;
 }
 
-/* Estilos para el modal de eliminar cuenta */
+/* ===== ESTILOS MEJORADOS PARA EL MODAL DE ELIMINAR CUENTA ===== */
 .modal {
 	position: fixed;
 	top: 0;
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background: rgba(0, 0, 0, 0.5);
-	display: flex;
+	background: rgba(0, 0, 0, 0.7);
+	display: none;
 	justify-content: center;
 	align-items: center;
-	z-index: 1000;
+	z-index: 10000;
+	backdrop-filter: blur(5px);
 }
 
 .modal-content {
 	background: white;
-	padding: 2rem;
+	padding: 2.5rem;
 	border-radius: 12px;
 	max-width: 500px;
 	width: 90%;
-	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+	animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+	from {
+		opacity: 0;
+		transform: scale(0.9) translateY(-20px);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
 }
 
 .modal-content h3 {
 	color: #e53e3e;
 	margin-bottom: 1rem;
-	font-size: 1.3rem;
+	font-size: 1.4rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.modal-content h3::before {
+	content: "⚠️";
+	font-size: 1.2em;
+}
+
+.modal-content p {
+	color: #4a5568;
+	margin-bottom: 1rem;
+	line-height: 1.5;
 }
 
 .modal-content ul {
 	margin: 1rem 0;
 	padding-left: 1.5rem;
+	color: #4a5568;
 }
 
 .modal-content li {
 	margin-bottom: 0.5rem;
-	color: #4a5568;
+	line-height: 1.4;
+}
+
+.modal-content input[type="text"] {
+	width: 100%;
+	padding: 0.75rem;
+	margin: 1rem 0;
+	border: 2px solid #e53e3e;
+	border-radius: 6px;
+	font-size: 1rem;
+	transition: all 0.3s ease;
+	font-family: 'Arial', sans-serif;
+}
+
+.modal-content input[type="text"]:focus {
+	outline: none;
+	border-color: #c53030;
+	box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.modal-content input[type="text"]::placeholder {
+	color: #a0aec0;
 }
 
 .modal-actions {
 	display: flex;
 	gap: 1rem;
 	justify-content: flex-end;
-	margin-top: 1.5rem;
+	margin-top: 2rem;
 }
 
 .btn-cancel {
@@ -533,6 +688,7 @@ body {
 	cursor: pointer;
 	font-weight: 600;
 	transition: all 0.3s ease;
+	min-width: 100px;
 }
 
 .btn-cancel:hover {
@@ -549,17 +705,64 @@ body {
 	cursor: pointer;
 	font-weight: 600;
 	transition: all 0.3s ease;
+	min-width: 150px;
 }
 
 .btn-confirm:enabled:hover {
 	background: #c53030;
 	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(229, 62, 62, 0.4);
 }
 
 .btn-confirm:disabled {
 	background: #cbd5e0;
+	color: #718096;
 	cursor: not-allowed;
 	transform: none;
+	box-shadow: none;
+}
+
+/* Estilos para las notificaciones */
+#notification-container {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: 10000;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.notification {
+	background: #10b981;
+	color: white;
+	padding: 12px 20px;
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	animation: slideInRight 0.3s ease;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 300px;
+	max-width: 400px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.notification.error {
+	background: #e53e3e;
+}
+
+.notification.info {
+	background: #3b82f6;
+}
+
+.notification.warning {
+	background: #f59e0b;
+}
+
+.notification:hover {
+	transform: translateX(-5px);
 }
 
 /* Responsive */
@@ -615,6 +818,11 @@ body {
 		grid-template-columns: 1fr;
 	}
 
+	.modal-content {
+		padding: 1.5rem;
+		margin: 1rem;
+	}
+
 	.modal-actions {
 		flex-direction: column;
 	}
@@ -622,6 +830,36 @@ body {
 	.modal-actions .btn-cancel,
 	.modal-actions .btn-confirm {
 		width: 100%;
+		min-width: auto;
+	}
+
+	#notification-container {
+		left: 1rem;
+		right: 1rem;
+		top: 1rem;
+	}
+
+	.notification {
+		min-width: auto;
+		width: 100%;
+	}
+
+	/* Responsive para las acciones de citas */
+	.appointment-item {
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.appointment-actions {
+		justify-content: flex-start;
+		width: 100%;
+	}
+
+	.btn-accept,
+	.btn-reject,
+	.btn-complete {
+		flex: 1;
+		min-width: 120px;
 	}
 }
 
@@ -696,4 +934,241 @@ body {
 
 .service-item {
 	animation: slideIn 0.3s ease;
+}
+
+/* Mejoras para el modal en dispositivos móviles */
+@media (max-width: 480px) {
+	.modal-content {
+		padding: 1rem;
+		margin: 0.5rem;
+	}
+
+	.modal-content h3 {
+		font-size: 1.2rem;
+	}
+
+	.modal-content p {
+		font-size: 0.9rem;
+	}
+
+	.modal-content ul {
+		padding-left: 1rem;
+	}
+
+	.modal-content li {
+		font-size: 0.9rem;
+	}
+}
+
+/* Estilos para el estado de carga */
+.loading {
+	opacity: 0.7;
+	pointer-events: none;
+	position: relative;
+}
+
+.loading::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 20px;
+	height: 20px;
+	margin: -10px 0 0 -10px;
+	border: 2px solid #f3f3f3;
+	border-top: 2px solid #667eea;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+/* ===== ESTILOS PARA EL MODAL DE EDITAR SERVICIO ===== */
+.modal-editar-servicio {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.7);
+	display: none;
+	justify-content: center;
+	align-items: center;
+	z-index: 10000;
+	backdrop-filter: blur(5px);
+}
+
+.modal-editar-content {
+	background: white;
+	padding: 2.5rem;
+	border-radius: 12px;
+	max-width: 600px;
+	width: 90%;
+	max-height: 90vh;
+	overflow-y: auto;
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+	animation: modalSlideIn 0.3s ease;
+}
+
+.modal-editar-content h3 {
+	color: #667eea;
+	margin-bottom: 1.5rem;
+	font-size: 1.4rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	border-bottom: 2px solid #e2e8f0;
+	padding-bottom: 0.5rem;
+}
+
+.modal-editar-content h3::before {
+	content: "✏️";
+	font-size: 1.2em;
+}
+
+/* Botones de acción para servicios */
+.btn-edit-service {
+	background: #3b82f6;
+	color: white;
+	border: none;
+	padding: 6px 12px;
+	border-radius: 4px;
+	font-size: 0.85rem;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	margin-right: 0.5rem;
+}
+
+.btn-edit-service:hover {
+	background: #2563eb;
+	transform: scale(1.05);
+}
+
+.service-actions {
+	display: flex;
+	gap: 0.5rem;
+	margin-top: 0.5rem;
+}
+
+/* Formulario en modal */
+.modal-form-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.modal-form-group label {
+	font-weight: 600;
+	color: #4a5568;
+	font-size: 0.9rem;
+}
+
+.modal-form-group input,
+.modal-form-group textarea {
+	padding: 0.75rem;
+	border: 2px solid #e2e8f0;
+	border-radius: 6px;
+	font-size: 0.95rem;
+	transition: all 0.3s ease;
+	font-family: 'Arial', sans-serif;
+}
+
+.modal-form-group input:focus,
+.modal-form-group textarea:focus {
+	outline: none;
+	border-color: #667eea;
+	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.modal-form-group textarea {
+	resize: vertical;
+	min-height: 100px;
+}
+
+.modal-form-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+}
+
+.modal-actions-editar {
+	display: flex;
+	gap: 1rem;
+	justify-content: flex-end;
+	margin-top: 2rem;
+	padding-top: 1rem;
+	border-top: 1px solid #e2e8f0;
+}
+
+.btn-cancelar-editar {
+	background: #a0aec0;
+	color: white;
+	border: none;
+	padding: 0.75rem 1.5rem;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 600;
+	transition: all 0.3s ease;
+	min-width: 100px;
+}
+
+.btn-cancelar-editar:hover {
+	background: #718096;
+	transform: translateY(-2px);
+}
+
+.btn-guardar-editar {
+	background: #10b981;
+	color: white;
+	border: none;
+	padding: 0.75rem 1.5rem;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 600;
+	transition: all 0.3s ease;
+	min-width: 150px;
+}
+
+.btn-guardar-editar:hover {
+	background: #059669;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-guardar-editar:disabled {
+	background: #cbd5e0;
+	color: #718096;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
+}
+
+/* Estado de carga en el modal */
+.modal-loading {
+	opacity: 0.7;
+	pointer-events: none;
+	position: relative;
+}
+
+.modal-loading::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 20px;
+	height: 20px;
+	margin: -10px 0 0 -10px;
+	border: 2px solid #f3f3f3;
+	border-top: 2px solid #667eea;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
 }

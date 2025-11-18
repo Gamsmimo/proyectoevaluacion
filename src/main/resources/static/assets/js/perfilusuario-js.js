@@ -23,6 +23,11 @@ const el = {
 let isEditing = false;
 let originalData = { ...profileData };
 
+// ✅ OBTENER TOKEN CSRF
+function getCSRFToken() {
+	return document.querySelector('input[name="_csrf"]')?.value || '';
+}
+
 function showAlert(text, type) {
 	if (el.alert && el.alertText) {
 		el.alertText.textContent = text;
@@ -66,12 +71,10 @@ function toggleEdit() {
 	}
 }
 
-// Función para guardar cambios
 function guardarCambios() {
 	if (!isEditing) return;
 
 	const datosActualizados = {
-		id: profileData.id,
 		nombre: el.nombre.value,
 		email: el.email.value,
 		telefono: el.telefono.value
@@ -79,12 +82,19 @@ function guardarCambios() {
 
 	showAlert('Guardando cambios...', 'success');
 
-	fetch('/usuarios/actualizar', {
+	// ✅ USAR FORM-DATA EN LUGAR DE URL ENCODED
+	const formData = new FormData();
+	formData.append('nombre', datosActualizados.nombre);
+	formData.append('email', datosActualizados.email);
+	formData.append('telefono', datosActualizados.telefono);
+
+	fetch('/usuarios/actualizar-perfil-ajax', {
 		method: 'POST',
 		headers: {
-			'Content-Type': 'application/json',
+			// ✅ AGREGAR HEADER CSRF
+			'X-CSRF-TOKEN': getCSRFToken()
 		},
-		body: JSON.stringify(datosActualizados)
+		body: formData
 	})
 		.then(response => {
 			if (!response.ok) {
@@ -94,27 +104,50 @@ function guardarCambios() {
 		})
 		.then(data => {
 			if (data.success) {
-				// Actualizar datos locales
 				profileData.nombre = el.nombre.value;
 				profileData.email = el.email.value;
 				profileData.telefono = el.telefono.value;
 
 				updateDisplay();
 				toggleEdit();
-				showAlert('✓ Información actualizada correctamente', 'success');
-
-				// Recargar la página después de un tiempo para mostrar cambios
-				setTimeout(() => {
-					window.location.reload();
-				}, 1500);
+				showAlert('✓ ' + data.message, 'success');
 			} else {
-				throw new Error(data.message || 'Error al actualizar');
+				throw new Error(data.message);
 			}
 		})
 		.catch(error => {
 			console.error('Error:', error);
-			showAlert('✗ Error al actualizar: ' + error.message, 'error');
+			showAlert('✗ ' + error.message, 'error');
+
+			// ✅ REVERTIR CAMBIOS EN CASO DE ERROR
+			el.nombre.value = originalData.nombre;
+			el.email.value = originalData.email;
+			el.telefono.value = originalData.telefono;
 		});
+}
+
+// ✅ NUEVA FUNCIÓN: ENVIAR FORMULARIO TRADICIONAL (ALTERNATIVA)
+function guardarCambiosFormularioTradicional() {
+	if (!isEditing) return;
+
+	const form = document.getElementById('profileForm');
+	if (form) {
+		// ✅ HABILITAR CAMPOS TEMPORALMENTE PARA QUE SE ENVÍEN
+		const inputs = [el.nombre, el.email, el.telefono];
+		inputs.forEach(input => {
+			if (input) input.disabled = false;
+		});
+
+		// Enviar formulario
+		form.submit();
+
+		// Volver a deshabilitar (aunque la página se recargará)
+		setTimeout(() => {
+			inputs.forEach(input => {
+				if (input) input.disabled = true;
+			});
+		}, 100);
+	}
 }
 
 // Event Listeners
@@ -123,7 +156,8 @@ if (el.editBtn) {
 }
 
 if (el.saveBtn) {
-	el.saveBtn.addEventListener('click', guardarCambios);
+	// ✅ CAMBIAR A FORMULARIO TRADICIONAL PARA EVITAR PROBLEMAS
+	el.saveBtn.addEventListener('click', guardarCambiosFormularioTradicional);
 }
 
 if (el.cancelBtn) {
@@ -206,7 +240,8 @@ function crearModalEliminacion() {
         </div>
     `;
 
-	document.body.insertAdjacentHTML('beforeend', modalHTML);
+	document.getElementById('modalContainer').insertAdjacentHTML('beforeend', modalHTML);
+
 
 	// Configurar eventos del modal
 	const modal = document.getElementById('deleteModal');
@@ -240,65 +275,44 @@ function crearModalEliminacion() {
 	});
 }
 
-// Función para eliminar la cuenta
 function eliminarCuenta() {
-	const modal = document.getElementById('deleteModal');
-	const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+	if (!confirm("¿Seguro que quieres eliminar tu cuenta? Esta acción es irreversible.")) {
+		return;
+	}
 
-	// Deshabilitar botón durante la solicitud
-	confirmDeleteBtn.disabled = true;
-	confirmDeleteBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2a10 10 0 0 1 7.38 16.75"></path>
-            <path d="M12 2v4"></path>
-            <path d="M12 18v4"></path>
-        </svg>
-        Eliminando...
-    `;
+	const token = document.querySelector('meta[name="_csrf"]').content;
+	const header = document.querySelector('meta[name="_csrf_header"]').content;
 
-	showAlert('Eliminando cuenta...', 'success');
-
-	fetch(`/usuarios/eliminar-cuenta/${profileData.id}`, {
-		method: 'DELETE'
+	fetch("/usuarios/eliminar-cuenta", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			[header]: token
+		}
 	})
 		.then(response => {
+			if (response.redirected) {
+				window.location.href = response.url;
+				return;
+			}
 			if (!response.ok) {
-				throw new Error('Error al eliminar la cuenta');
-			}
-			return response.json();
-		})
-		.then(data => {
-			if (data.success) {
-				showAlert('✓ Cuenta eliminada correctamente', 'success');
-				modal.style.display = 'none';
-
-				// Redirigir al login después de un tiempo
-				setTimeout(() => {
-					window.location.href = '/usuarios/login';
-				}, 2000);
-			} else {
-				throw new Error(data.message || 'Error al eliminar la cuenta');
+				throw new Error("No se pudo eliminar la cuenta");
 			}
 		})
-		.catch(error => {
-			console.error('Error:', error);
-			showAlert('✗ Error al eliminar cuenta: ' + error.message, 'error');
-
-			// Rehabilitar botón
-			confirmDeleteBtn.disabled = false;
-			confirmDeleteBtn.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-            </svg>
-            Eliminar Cuenta Permanentemente
-        `;
-		});
+		.catch(err => alert("Error: " + err));
 }
 
-// Inicializar display y modal cuando se cargue la página
+function configurarDashboardProfesional() {
+	const dashboardBtn = document.getElementById('dashboardBtn');
+	if (dashboardBtn) {
+		dashboardBtn.addEventListener('click', () => {
+			window.location.href = '/profesional/dashboard';
+		});
+	}
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	updateDisplay();
 	crearModalEliminacion();
+	configurarDashboardProfesional();
 });

@@ -18,7 +18,7 @@ public class Profesional {
 	private LocalDateTime horarioDisponible; // Cambiar de String a LocalDateTime
 
 	// Relación: Un profesional pertenece a un usuario
-	@OneToOne
+	@OneToOne(fetch = FetchType.EAGER) // Cambiado a EAGER para cargar automáticamente
 	@JoinColumn(name = "usuario_id")
 	@JsonIgnore
 	private Usuario usuario;
@@ -78,6 +78,14 @@ public class Profesional {
 
 	public void setCitas(List<Cita> citas) {
 		this.citas = citas;
+	}
+
+	// MÉTODO AGREGADO: Obtener el nombre del usuario relacionado
+	public String getNombre() {
+		if (this.usuario != null) {
+			return this.usuario.getNombre();
+		}
+		return "Profesional no asignado";
 	}
 
 	@Override

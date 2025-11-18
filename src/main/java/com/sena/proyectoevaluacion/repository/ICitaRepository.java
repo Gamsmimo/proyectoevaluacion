@@ -13,8 +13,14 @@ import java.util.Optional;
 @Repository
 public interface ICitaRepository extends JpaRepository<Cita, Integer> {
 
-	// Métodos existentes...
-	List<Cita> findByUsuarioId(Integer usuarioId);
+	// Método optimizado para cargar todas las relaciones
+	@Query("SELECT c FROM Cita c WHERE c.profesional.id = :profesionalId AND c.estado = :estado ORDER BY c.fechaHora ASC")
+	List<Cita> findByProfesionalIdAndEstado(@Param("profesionalId") Integer profesionalId,
+			@Param("estado") String estado);
+
+	// BUSCAR CITAS POR USUARIO (FALTANTE - AGREGADO)
+	@Query("SELECT c FROM Cita c WHERE c.usuario.id = :usuarioId ORDER BY c.fechaHora DESC")
+	List<Cita> findByUsuarioId(@Param("usuarioId") Integer usuarioId);
 
 	List<Cita> findByProfesionalId(Integer profesionalId);
 
@@ -22,18 +28,24 @@ public interface ICitaRepository extends JpaRepository<Cita, Integer> {
 
 	List<Cita> findByEstado(String estado);
 
-	List<Cita> findByProfesionalIdAndEstado(Integer profesionalId, String estado);
-
-	// Método para verificar existencia con String (mantener por compatibilidad)
-	@Query("SELECT COUNT(c) > 0 FROM Cita c WHERE c.profesional.id = :profesionalId AND c.fechaHora = :fechaHora")
-	boolean existsByProfesionalIdAndFechaHora(@Param("profesionalId") Integer profesionalId,
-			@Param("fechaHora") String fechaHora);
-
-	// NUEVO MÉTODO: Buscar citas por profesional y LocalDateTime
+	// MÉTODO MEJORADO: Buscar citas por profesional y LocalDateTime
 	@Query("SELECT c FROM Cita c WHERE c.profesional.id = :profesionalId AND c.fechaHora = :fechaHora")
 	List<Cita> findByProfesionalIdAndFechaHora(@Param("profesionalId") Integer profesionalId,
 			@Param("fechaHora") LocalDateTime fechaHora);
 
-	@Query("SELECT c FROM Cita c LEFT JOIN FETCH c.usuario LEFT JOIN FETCH c.servicio LEFT JOIN FETCH c.profesional WHERE c.id = :id")
+	// MÉTODO ALTERNATIVO: Para verificar disponibilidad (más eficiente)
+	@Query("SELECT COUNT(c) FROM Cita c WHERE c.profesional.id = :profesionalId AND c.fechaHora = :fechaHora AND c.estado IN ('PENDIENTE', 'ACEPTADA')")
+	long countCitasActivasByProfesionalAndFecha(@Param("profesionalId") Integer profesionalId,
+			@Param("fechaHora") LocalDateTime fechaHora);
+
+	@Query("SELECT c FROM Cita c LEFT JOIN FETCH c.usuario LEFT JOIN FETCH c.servicio LEFT JOIN FETCH c.profesional p LEFT JOIN FETCH p.usuario WHERE c.id = :id")
 	Optional<Cita> findByIdWithAllRelations(@Param("id") Integer id);
+
+	// MÉTODOS ADICIONALES ÚTILES para el dashboard del profesional
+	@Query("SELECT c FROM Cita c WHERE c.profesional.id = :profesionalId ORDER BY c.fechaHora DESC")
+	List<Cita> findCitasByProfesionalOrderByFechaDesc(@Param("profesionalId") Integer profesionalId);
+
+	// Contar citas por estado para un profesional específico
+	@Query("SELECT COUNT(c) FROM Cita c WHERE c.profesional.id = :profesionalId AND c.estado = :estado")
+	long countByProfesionalIdAndEstado(@Param("profesionalId") Integer profesionalId, @Param("estado") String estado);
 }

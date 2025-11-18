@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ICitaService {
+
 	List<Cita> findAll();
 
 	Optional<Cita> findById(Integer id);
@@ -24,11 +25,8 @@ public interface ICitaService {
 
 	List<Cita> findByProfesionalIdAndEstado(Integer profesionalId, String estado);
 
-	// Método principal con LocalDateTime
 	boolean verificarDisponibilidad(Integer profesionalId, LocalDateTime fechaHora);
 
-	// Método sobrecargado con String para compatibilidad
-	boolean verificarDisponibilidad(Integer profesionalId, String fechaHora);
-
 	Optional<Cita> findByIdWithAllRelations(Integer id);
+
 }

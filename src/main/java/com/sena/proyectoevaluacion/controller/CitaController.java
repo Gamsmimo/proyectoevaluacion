@@ -27,7 +27,7 @@ public class CitaController {
 	@Autowired
 	private IServicioService servicioService;
 
-	// Procesar reserva de cita - CORREGIDO
+	// Procesar reserva de cita
 	@PostMapping("/reservar")
 	public String reservarCita(@RequestParam("fechaHora") String fechaHoraStr, @RequestParam Integer profesionalId,
 			@RequestParam Integer servicioId, @RequestParam(required = false) String descripcion, HttpSession session,
@@ -56,7 +56,7 @@ public class CitaController {
 
 				// Crear nueva cita
 				Cita cita = new Cita();
-				cita.setFechaHora(fechaHora); // Guardar como LocalDateTime
+				cita.setFechaHora(fechaHora);
 				cita.setUsuario(usuario);
 				cita.setProfesional(profesionalOpt.get());
 				cita.setServicio(servicioOpt.get());
@@ -77,7 +77,6 @@ public class CitaController {
 		}
 	}
 
-	// Mostrar citas del usuario
 	@GetMapping("/mis-citas")
 	public String misCitas(HttpSession session, Model model) {
 		Usuario usuario = (Usuario) session.getAttribute("usuario");
@@ -85,9 +84,74 @@ public class CitaController {
 			return "redirect:/usuarios/login";
 		}
 
-		List<Cita> citas = citaService.findByUsuarioId(usuario.getId());
-		model.addAttribute("citas", citas != null ? citas : new ArrayList<Cita>());
-		return "mis-citas";
+		try {
+			// Usar el método específico que carga las relaciones
+			List<Cita> citasUsuario = citaService.findByUsuarioId(usuario.getId());
+
+			System.out.println("=== DEBUG CONTROLLER - CITAS DEL USUARIO ===");
+			System.out.println("Usuario ID: " + usuario.getId());
+			System.out.println("Total citas: " + citasUsuario.size());
+
+			// Debug detallado de cada cita
+			for (Cita cita : citasUsuario) {
+				System.out.println("--- CITA ID: " + cita.getId() + " ---");
+				System.out.println("Estado: " + cita.getEstado());
+				System.out.println("Fecha: " + cita.getFechaHora());
+
+				if (cita.getServicio() != null) {
+					System.out.println("Servicio ID: " + cita.getServicio().getId());
+					System.out.println("Servicio Nombre: " + cita.getServicio().getNombre());
+					System.out.println("Servicio Descripción: " + cita.getServicio().getDescripcion());
+					System.out.println("Servicio Duración: " + cita.getServicio().getDuracion());
+					System.out.println("Servicio Precio: " + cita.getServicio().getPrecio());
+				} else {
+					System.out.println("Servicio: NULL");
+				}
+
+				if (cita.getProfesional() != null) {
+					System.out.println("Profesional: " + cita.getProfesional().getNombre());
+				} else {
+					System.out.println("Profesional: NULL");
+				}
+			}
+
+			model.addAttribute("citas", citasUsuario);
+			return "mis-citas";
+
+		} catch (Exception e) {
+			System.err.println("ERROR en misCitas: " + e.getMessage());
+			e.printStackTrace();
+			model.addAttribute("citas", new ArrayList<Cita>());
+			model.addAttribute("error", "Error al cargar las citas: " + e.getMessage());
+			return "mis-citas";
+		}
+	}
+
+	// Método para cancelar cita - CORREGIDO
+	@PostMapping("/cancelar/{id}")
+	@ResponseBody
+	public String cancelarCita(@PathVariable Integer id, HttpSession session) {
+		try {
+			Usuario usuario = (Usuario) session.getAttribute("usuario");
+			if (usuario == null) {
+				return "ERROR: Usuario no autenticado";
+			}
+
+			Optional<Cita> citaOpt = citaService.findById(id);
+			if (citaOpt.isPresent()) {
+				Cita cita = citaOpt.get();
+				// Verificar que la cita pertenece al usuario
+				if (cita.getUsuario().getId().equals(usuario.getId())) {
+					cita.setEstado("Cancelada");
+					citaService.save(cita);
+					return "OK";
+				}
+			}
+
+			return "ERROR: Cita no encontrada";
+		} catch (Exception e) {
+			return "ERROR: " + e.getMessage();
+		}
 	}
 
 	// Método auxiliar para parsear fecha y hora
@@ -112,6 +176,54 @@ public class CitaController {
 		} catch (Exception e) {
 			System.err.println("Error al parsear fecha y hora: " + fechaHoraStr + " - " + e.getMessage());
 			return LocalDateTime.now();
+		}
+	}
+
+	@GetMapping("/citas-usuario")
+	public String citasUsuario(HttpSession session, Model model) {
+		Usuario usuario = (Usuario) session.getAttribute("usuario");
+		if (usuario == null) {
+			return "redirect:/usuarios/login";
+		}
+
+		try {
+			// Usar el método específico que carga las relaciones
+			List<Cita> citasUsuario = citaService.findByUsuarioId(usuario.getId());
+
+			System.out.println("=== CITAS USUARIO VISTA ===");
+			System.out.println("Usuario ID: " + usuario.getId());
+			System.out.println("Total citas: " + citasUsuario.size());
+
+			// Debug detallado de cada cita
+			for (Cita cita : citasUsuario) {
+				System.out.println("--- CITA ID: " + cita.getId() + " ---");
+				System.out.println("Estado: " + cita.getEstado());
+				System.out.println("Fecha: " + cita.getFechaHora());
+
+				if (cita.getServicio() != null) {
+					System.out.println("Servicio: " + cita.getServicio().getNombre());
+					System.out.println("Precio: " + cita.getServicio().getPrecio());
+				} else {
+					System.out.println("Servicio: NULL");
+				}
+
+				if (cita.getProfesional() != null) {
+					System.out.println("Profesional: " + cita.getProfesional().getNombre());
+				} else {
+					System.out.println("Profesional: NULL");
+				}
+			}
+
+			model.addAttribute("citas", citasUsuario);
+			model.addAttribute("usuario", usuario);
+			return "ReservaCita/citas_usuario";
+
+		} catch (Exception e) {
+			System.err.println("ERROR en citasUsuario: " + e.getMessage());
+			e.printStackTrace();
+			model.addAttribute("citas", new ArrayList<Cita>());
+			model.addAttribute("error", "Error al cargar las citas: " + e.getMessage());
+			return "ReservaCita/citas_usuario";
 		}
 	}
 }

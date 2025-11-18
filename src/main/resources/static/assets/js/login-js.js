@@ -1,73 +1,139 @@
 document.addEventListener('DOMContentLoaded', function() {
 	const loginForm = document.getElementById('loginForm');
-	const errorMessage = document.getElementById('errorMessage');
-	const successMessage = document.getElementById('successMessage');
+	const loginButton = document.getElementById('loginButton');
+	const buttonText = loginButton.querySelector('.button-text');
+	const loadingSpinner = loginButton.querySelector('.loading-spinner');
 
-	// Mostrar mensajes flash si existen
-	const urlParams = new URLSearchParams(window.location.search);
-	if (urlParams.get('error')) {
-		showError(decodeURIComponent(urlParams.get('error')));
-	}
-	if (urlParams.get('success')) {
-		showSuccess(decodeURIComponent(urlParams.get('success')));
-	}
-
-	// QUITAR el event listener que previene el envío
-	// Y dejar que Spring maneje el formulario
-
-	// Solo mantener las validaciones básicas si quieres
+	// Manejar envío del formulario
 	loginForm.addEventListener('submit', function(e) {
-		const email = document.getElementById('email').value;
+		const username = document.getElementById('username').value.trim();
 		const password = document.getElementById('password').value;
 
-		// Validaciones básicas del frontend (opcional)
-		if (!email || !password) {
-			e.preventDefault(); // Solo prevenir si hay errores de validación
-			showError('Por favor, completa todos los campos');
+		// Validación básica
+		if (!username || !password) {
+			e.preventDefault();
+			showMessage('Por favor, completa todos los campos', 'error');
 			return;
 		}
 
-		if (!isValidEmail(email)) {
-			e.preventDefault(); // Solo prevenir si hay errores de validación
-			showError('Por favor, ingresa un email válido');
+		// Validación de formato de email
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(username)) {
+			e.preventDefault();
+			showMessage('Por favor, ingresa un email válido', 'error');
 			return;
 		}
 
-		// Si pasa las validaciones, dejar que el formulario se envíe normalmente
-		// Spring se encargará del procesamiento
+		// Mostrar estado de carga
+		loginButton.disabled = true;
+		buttonText.style.display = 'none';
+		loadingSpinner.style.display = 'inline-block';
+
+		// Limpiar mensajes existentes al enviar
+		const existingMessages = document.querySelectorAll('.custom-message');
+		existingMessages.forEach(msg => msg.remove());
 	});
 
-	function showError(message) {
-		if (errorMessage) {
-			errorMessage.textContent = message;
-			errorMessage.style.display = 'block';
-			if (successMessage) successMessage.style.display = 'none';
-		}
+	// Función para mostrar mensajes
+	function showMessage(message, type) {
+		// Eliminar mensajes existentes
+		const existingMessages = document.querySelectorAll('.custom-message');
+		existingMessages.forEach(msg => msg.remove());
+
+		// Crear nuevo mensaje
+		const messageDiv = document.createElement('div');
+		messageDiv.className = `custom-message ${type}-message`;
+
+		const icon = type === 'error' ? '❌' : '✅';
+		messageDiv.innerHTML = `
+            <span class="icon">${icon}</span>
+            <span class="text">${message}</span>
+        `;
+
+		loginForm.insertBefore(messageDiv, loginForm.firstChild);
+
+		// Auto-eliminar después de 5 segundos
+		setTimeout(() => {
+			if (messageDiv.parentNode) {
+				messageDiv.style.opacity = '0';
+				messageDiv.style.transform = 'translateY(-10px)';
+				setTimeout(() => {
+					if (messageDiv.parentNode) {
+						messageDiv.remove();
+					}
+				}, 300);
+			}
+		}, 5000);
+
+		// Permitir cerrar manualmente
+		messageDiv.addEventListener('click', function() {
+			this.style.opacity = '0';
+			this.style.transform = 'translateY(-10px)';
+			setTimeout(() => {
+				if (this.parentNode) {
+					this.remove();
+				}
+			}, 300);
+		});
 	}
 
-	function showSuccess(message) {
-		if (successMessage) {
-			successMessage.textContent = message;
-			successMessage.style.display = 'block';
-			if (errorMessage) errorMessage.style.display = 'none';
-		}
+	// Auto-focus en el campo de email
+	const usernameField = document.getElementById('username');
+	if (usernameField && !usernameField.value) {
+		usernameField.focus();
 	}
 
-	function isValidEmail(email) {
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		return emailRegex.test(email);
-	}
-
-	// Efecto de animación en los inputs (esto sí puede mantenerse)
-	const inputs = document.querySelectorAll('input');
+	// Limpiar mensajes al empezar a escribir
+	const inputs = loginForm.querySelectorAll('input');
 	inputs.forEach(input => {
-		input.addEventListener('focus', function() {
-			this.parentElement.style.transform = 'scale(1.02)';
-			this.parentElement.style.transition = 'transform 0.3s';
-		});
+		input.addEventListener('input', function() {
+			const messages = document.querySelectorAll('.custom-message');
+			messages.forEach(msg => {
+				msg.style.opacity = '0';
+				setTimeout(() => msg.remove(), 300);
+			});
 
-		input.addEventListener('blur', function() {
-			this.parentElement.style.transform = 'scale(1)';
+			// Restaurar botón si estaba deshabilitado por error de validación
+			if (loginButton.disabled) {
+				loginButton.disabled = false;
+				buttonText.style.display = 'inline-block';
+				loadingSpinner.style.display = 'none';
+			}
 		});
+	});
+
+	// Auto-eliminar mensajes del servidor después de 5 segundos
+	setTimeout(function() {
+		const serverMessages = document.querySelectorAll('.alert-message');
+		serverMessages.forEach(function(message) {
+			message.style.opacity = '0';
+			setTimeout(function() {
+				if (message.parentNode) {
+					message.remove();
+				}
+			}, 500);
+		});
+	}, 5000);
+
+	// Permitir cerrar mensajes del servidor manualmente
+	document.querySelectorAll('.alert-message').forEach(function(message) {
+		message.style.cursor = 'pointer';
+		message.addEventListener('click', function() {
+			this.style.opacity = '0';
+			setTimeout(() => {
+				if (this.parentNode) {
+					this.remove();
+				}
+			}, 500);
+		});
+	});
+
+	// Manejar el evento de antes de descargar la página
+	window.addEventListener('beforeunload', function() {
+		if (loginButton.disabled) {
+			loginButton.disabled = false;
+			buttonText.style.display = 'inline-block';
+			loadingSpinner.style.display = 'none';
+		}
 	});
 });

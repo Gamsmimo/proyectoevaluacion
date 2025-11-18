@@ -12,30 +12,29 @@ public class Cita {
 	private Integer id;
 
 	@Column(name = "fecha_hora")
-	private LocalDateTime fechaHora; // Cambiar de String a LocalDateTime
+	private LocalDateTime fechaHora;
 
 	@Column(name = "estado")
 	private String estado;
 
 	// Relación: Una cita pertenece a un usuario
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.EAGER) // Cambiado a EAGER
 	@JoinColumn(name = "usuario_id")
 	@JsonIgnore
 	private Usuario usuario;
 
 	// Relación: Una cita tiene un servicio
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.EAGER) // Cambiado a EAGER
 	@JoinColumn(name = "servicio_id")
-	@JsonIgnore
 	private Servicio servicio;
 
 	// Relación: Una cita tiene un profesional
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.EAGER) // Cambiado a EAGER
 	@JoinColumn(name = "profesional_id")
-	@JsonIgnore
 	private Profesional profesional;
 
-	// Constructores
+	// Constructores, getters y setters... (mantén todo igual)
+
 	public Cita() {
 	}
 
@@ -47,7 +46,7 @@ public class Cita {
 		this.profesional = profesional;
 	}
 
-	// Getters y Setters
+	// Getters y Setters (mantén todo igual)
 	public Integer getId() {
 		return id;
 	}

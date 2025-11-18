@@ -16,8 +16,6 @@ public interface IUsuarioRepository extends JpaRepository<Usuario, Integer> {
 	// Métodos básicos
 	Optional<Usuario> findByEmail(String email);
 
-	Optional<Usuario> findByEmailAndPassword(String email, String password);
-
 	boolean existsByEmail(String email);
 
 	// Métodos con relaciones

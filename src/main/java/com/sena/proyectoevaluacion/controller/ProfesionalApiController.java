@@ -1,12 +1,16 @@
 package com.sena.proyectoevaluacion.controller;
 
 import com.sena.proyectoevaluacion.model.Profesional;
+import com.sena.proyectoevaluacion.model.Usuario;
 import com.sena.proyectoevaluacion.service.IProfesionalService;
+import com.sena.proyectoevaluacion.service.IUsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -16,6 +20,9 @@ public class ProfesionalApiController {
 
 	@Autowired
 	private IProfesionalService profesionalService;
+
+	@Autowired
+	private IUsuarioService usuarioService;
 
 	// GET - Obtener todos los profesionales
 	@GetMapping
@@ -52,12 +59,65 @@ public class ProfesionalApiController {
 
 	// POST - Crear nuevo profesional
 	@PostMapping
-	public ResponseEntity<Profesional> crearProfesional(@RequestBody Profesional profesional) {
+	public ResponseEntity<?> crearProfesional(@RequestBody Profesional profesional) {
 		try {
+			if (profesional.getEspecialidad() == null || profesional.getEspecialidad().trim().isEmpty()) {
+				return ResponseEntity.badRequest().body(Map.of("error", "La especialidad es obligatoria"));
+			}
+
+			if (profesional.getHorarioDisponible() == null) {
+				return ResponseEntity.badRequest().body(Map.of("error", "El horario disponible es obligatorio"));
+			}
+
 			Profesional profesionalCreado = profesionalService.save(profesional);
-			return ResponseEntity.ok(profesionalCreado);
+			return ResponseEntity.ok(Map.of("success", true, "profesional", profesionalCreado, "message",
+					"Profesional creado exitosamente"));
 		} catch (Exception e) {
-			return ResponseEntity.internalServerError().build();
+			return ResponseEntity.status(500)
+					.body(Map.of("success", false, "error", "Error al crear profesional: " + e.getMessage()));
+		}
+	}
+
+	@PostMapping("/registrar")
+	public ResponseEntity<?> registrarProfesional(@RequestBody Map<String, Object> body) {
+		try {
+			String especialidad = (String) body.get("especialidad");
+			String horarioStr = (String) body.get("horarioDisponible");
+			Object usuarioIdObj = body.get("usuarioId");
+
+			if (especialidad == null || especialidad.trim().isEmpty()) {
+				return ResponseEntity.badRequest().body(Map.of("error", "La especialidad es obligatoria"));
+			}
+			if (horarioStr == null || horarioStr.trim().isEmpty()) {
+				return ResponseEntity.badRequest().body(Map.of("error", "El horario disponible es obligatorio"));
+			}
+			if (usuarioIdObj == null) {
+				return ResponseEntity.badRequest().body(Map.of("error", "El usuarioId es obligatorio"));
+			}
+
+			Integer usuarioId;
+			if (usuarioIdObj instanceof Integer) {
+				usuarioId = (Integer) usuarioIdObj;
+			} else {
+				usuarioId = Integer.parseInt(usuarioIdObj.toString());
+			}
+
+			Optional<Usuario> usuarioOpt = usuarioService.findById(usuarioId);
+			if (usuarioOpt.isEmpty()) {
+				return ResponseEntity.badRequest().body(Map.of("error", "Usuario no encontrado"));
+			}
+
+			LocalDateTime horario = LocalDateTime.parse(horarioStr);
+			Usuario usuario = usuarioOpt.get();
+
+			Profesional profesional = new Profesional(especialidad.trim(), horario, usuario);
+			Profesional profesionalGuardado = profesionalService.save(profesional);
+
+			return ResponseEntity.ok(Map.of("success", true, "profesional", profesionalGuardado, "message",
+					"Profesional registrado y asociado al usuario correctamente"));
+		} catch (Exception e) {
+			return ResponseEntity.status(500)
+					.body(Map.of("success", false, "error", "Error al registrar profesional: " + e.getMessage()));
 		}
 	}
 
@@ -82,18 +142,22 @@ public class ProfesionalApiController {
 		}
 	}
 
-	// DELETE - Eliminar profesional
+// DELETE - Eliminar profesional
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> eliminarProfesional(@PathVariable Integer id) {
+	public ResponseEntity<?> eliminarProfesional(@PathVariable Integer id) {
 		try {
-			if (!profesionalService.findById(id).isPresent()) {
-				return ResponseEntity.notFound().build();
+			Optional<Profesional> profesionalOpt = profesionalService.findById(id);
+			if (profesionalOpt.isEmpty()) {
+				return ResponseEntity.status(404)
+						.body(Map.of("success", false, "message", "Profesional no encontrado"));
 			}
 
 			profesionalService.deleteById(id);
-			return ResponseEntity.ok().build();
+
+			return ResponseEntity.ok(Map.of("success", true, "message", "Profesional eliminado correctamente"));
 		} catch (Exception e) {
-			return ResponseEntity.internalServerError().build();
+			return ResponseEntity.status(500)
+					.body(Map.of("success", false, "message", "Error al eliminar profesional: " + e.getMessage()));
 		}
 	}
 }

@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 				if (status === 200) {
 					showMessage('Inicio de sesión exitoso ✅', 'success');
+
+					// Aquí deberías redirigir según tu rol si usas APIs.
+					// Para la lógica de Spring Security no aplica este login API.
 					setTimeout(() => window.location.href = '/dashboard', 1500);
 				} else {
 					showMessage(body.error || 'Usuario o contraseña incorrectos ❌', 'error');

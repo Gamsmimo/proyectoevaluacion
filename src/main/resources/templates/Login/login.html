@@ -13,81 +13,23 @@
 		<div class="login-header">
 			<h1>TechFix</h1>
 			<p>Inicia sesión en tu cuenta</p>
-		</div>
-
-		<!-- Formulario login -->
-		<form class="login-form" id="loginForm">
+		</div> <!-- Formulario login -->
+		<form class="login-form" id="loginForm" th:action="@{/usuarios/login}" method="post">
 			<div id="alertContainer"></div>
-
-			<div class="form-group">
-				<label for="email">Correo Electrónico</label>
-				<input type="email" id="email" placeholder="tu@email.com" required autocomplete="email">
-			</div>
-
-			<div class="form-group">
-				<label for="password">Contraseña</label>
-				<input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
-			</div>
-
-			<button type="submit" class="login-button" id="loginButton">
-				<span class="button-text">Iniciar Sesión</span>
-				<span class="loading-spinner" style="display: none;">⏳</span>
-			</button>
-
-			<div class="divider">
-				<span>o</span>
-			</div>
-
+			<div class="form-group"> <label for="email">Correo Electrónico</label> <input type="email" id="email"
+					name="username" placeholder="tu@email.com" required autocomplete="email"> </div>
+			<div class="form-group"> <label for="password">Contraseña</label> <input type="password" id="password"
+					name="password" placeholder="••••••••" required autocomplete="current-password"> </div> <button
+				type="submit" class="login-button" id="loginButton"> <span class="button-text">Iniciar Sesión</span>
+				<span class="loading-spinner" style="display: none;">⏳</span> </button>
+			<div class="divider"> <span>o</span> </div>
 			<div class="register-link">
-				<p>¿No tienes una cuenta?</p>
-				<a th:href="@{/usuarios/registro}" class="register-button">Regístrate aquí</a>
+				<p>¿No tienes una cuenta?</p> <a th:href="@{/usuarios/registro}" class="register-button">Regístrate
+					aquí</a>
 			</div>
-
-			<div class="back-home">
-				<a th:href="@{/}" class="back-link">← Volver al inicio</a>
-			</div>
+			<div class="back-home"> <a th:href="@{/}" class="back-link">← Volver al inicio</a> </div>
 		</form>
 	</div>
-
-	<script>
-		const form = document.getElementById('loginForm');
-		const alertContainer = document.getElementById('alertContainer');
-
-		form.addEventListener('submit', async (e) => {
-			e.preventDefault();
-			alertContainer.innerHTML = ''; // Limpiar mensajes
-
-			const email = document.getElementById('email').value;
-			const password = document.getElementById('password').value;
-
-			try {
-				const res = await fetch('http://localhost:51370/api/usuarios/login', {
-					method: 'POST',
-					headers: {'Content-Type': 'application/json'},
-					body: JSON.stringify({email, password})
-				});
-
-				const data = await res.json();
-
-				if (res.ok) {
-					alertContainer.innerHTML = `<div class="alert-message success">
-                        ✅ Inicio de sesión exitoso
-                    </div>`;
-					// Redirigir después de 1.5s
-					setTimeout(() => window.location.href = '/dashboard', 1500);
-				} else {
-					alertContainer.innerHTML = `<div class="alert-message error">
-                        ❌ ${data.error || 'Usuario o contraseña incorrectos'}
-                    </div>`;
-				}
-			} catch (err) {
-				console.error(err);
-				alertContainer.innerHTML = `<div class="alert-message error">
-                    ❌ Error de conexión con el servidor
-                </div>`;
-			}
-		});
-	</script>
 </body>
 
 </html>
